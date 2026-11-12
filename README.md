@@ -10,6 +10,8 @@ $$\begin{aligned}
 \text{\textbf{phosphene/seme}} &\quad\longrightarrow\quad \text{Internal axis of predication and distinctive semantic features } (x \models P)
 \end{aligned}$$
 
+Detailed philosophical genealogy and module architecture are documented in the [Hermetic Repository Wiki](doc/wiki/INDEX.md).
+
 ---
 
 ## 1. Philosophical & Linguistic Genealogy
@@ -25,7 +27,7 @@ $$\begin{aligned}
    - A **seme** is the minimal distinctive semantic feature (e.g. `[+animate]`, `[+human]`, `[-adult]`).
    - A bundle of distinctive semes forms a **sememe** (the content plane of a linguistic sign).
 
-In Clojure, each registered namespaced keyword (`s/def :seme.feat/telic boolean?`) operates simultaneously as an independent semantic feature within an open map bundle (`s/keys`) and an unsaturated Peircean predicate awaiting referent conformance (`s/conform`).
+See [Genealogy & Semiotic Foundations](doc/wiki/genealogy.md) for the complete theoretical derivation.
 
 ---
 
@@ -40,19 +42,23 @@ The library is organized around Peirce's 1906 trichotomy:
 | **`phosphene.seme.delome`** | **Thirdness** | Inferential habits, selectional restrictions & falsification | `contextual-overlay`, `evaluate-overlay`, `infer-candidate-spec`, `boundary-specimen?` |
 | **`phosphene.seme.spec`** | **Invariants** | Formal specifications and dense `test.check` property generators | `s/fdef`, `::seme`, `::sememe`, `::witness` |
 
+See [Triadic Architecture & Module Design](doc/wiki/architecture.md) for data flow and Tellman naming compliance.
+
 ---
 
-## 3. Seven Architectural Predications (SEME-ARCH)
+## 3. Seven Architectural Predications (`SEME-ARCH`)
 
-`phosphene/seme` implements seven core architectural predications:
+`phosphene/seme` implements seven core architectural predications hyperlinked directly to their formal specifications and logic formulas in the hermetic wiki:
 
-1. **Sovereign Intension (`SEME-ARCH-001`):** Attribute meaning is bound to globally namespaced keywords, decoupling meaning from host record types.
-2. **Open-Vertex Projection (`SEME-ARCH-002`):** Orthogonal analytical vertices (phonological, morphosyntactic, historical) project onto a shared referent map without inheritance or key erasure.
-3. **Proof-Carrying Parse (`SEME-ARCH-003`):** Conformance produces a structured witness parse tree (`:witness/parsed`) paired with the symbolic predicate anatomy (`:witness/anatomy`) instead of an opaque boolean.
-4. **Componential Algebra (`SEME-ARCH-004`):** Distinctive semantic features combine, intersect, and diff (`plerematic-difference`) as pure data sets.
-5. **Scoped Vertex Overlays (`SEME-ARCH-005`):** Contextual selectional restrictions layer over sovereign coordinates without mutating global definitions.
-6. **Bifunctorial Bridge (`SEME-ARCH-006`):** Deductive specs (`Mode-D`) compile into inspectable schemas, while inductive Mode-S observation corpora distill into candidate specs (`infer-candidate-spec`).
-7. **Differential Falsification (`SEME-ARCH-007`):** Generative boundary testing synthesizes specimens that satisfy one analytical vertex while falsifying another (`boundary-specimen?`).
+1. [**SEME-ARCH-001: Sovereign Intension**](doc/wiki/predications.md#seme-arch-001) — Attribute meaning is bound to globally namespaced keywords, decoupling meaning from host record types.
+2. [**SEME-ARCH-002: Open-Vertex Projection**](doc/wiki/predications.md#seme-arch-002) — Orthogonal analytical vertices (phonological, morphosyntactic, historical) project onto a shared referent map without inheritance or key erasure.
+3. [**SEME-ARCH-003: Proof-Carrying Parse**](doc/wiki/predications.md#seme-arch-003) — Conformance produces a structured witness parse tree (`:witness/parsed`) paired with the symbolic predicate anatomy (`:witness/anatomy`) instead of an opaque boolean.
+4. [**SEME-ARCH-004: Homoiconic Componential Algebra**](doc/wiki/predications.md#seme-arch-004) — Distinctive semantic features combine, intersect, and diff (`plerematic-difference`) as pure data sets.
+5. [**SEME-ARCH-005: Scoped Vertex Overlays**](doc/wiki/predications.md#seme-arch-005) — Contextual selectional restrictions layer over sovereign coordinates without mutating global definitions.
+6. [**SEME-ARCH-006: Bifunctorial Bridge**](doc/wiki/predications.md#seme-arch-006) — Deductive specs (`Mode-D`) compile into inspectable schemas, while inductive Mode-S observation corpora distill into candidate specs (`infer-candidate-spec`).
+7. [**SEME-ARCH-007: Differential Falsification**](doc/wiki/predications.md#seme-arch-007) — Generative boundary testing synthesizes specimens that satisfy one analytical vertex while falsifying another (`boundary-specimen?`).
+
+For formal first-order logic axioms and Clojure s-expressions, inspect the [Architectural Predications Registry](doc/wiki/predications.md).
 
 ---
 
