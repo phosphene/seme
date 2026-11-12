@@ -1,0 +1,35 @@
+---
+uri: seme/wiki/index
+title: phosphene/seme Hermetic Repository Wiki & Predication Index
+owner: edphos
+status: living
+updated: 2026-11-12
+description: "Hermetic documentation index of predication architecture, Peircean semiotics, and formal SEME-ARCH coordinates for phosphene/seme."
+---
+
+# `phosphene/seme` Hermetic Wiki
+
+Welcome to the hermetic architecture and research documentation for `phosphene/seme`. This repository studies **predication itself** as an inspectable, transformable, and multi-perspectival object of formal study in Clojure.
+
+---
+
+## Architectural Lookup Index (`SEME-ARCH`)
+
+Every foundational architectural decision in `phosphene/seme` is formally predicated under a sovereign coordinate in the `SEME-ARCH` registry:
+
+| Coordinate | ID | Predicate | Specification & Proof Target |
+| :--- | :--- | :--- | :--- |
+| [`:seme.arch/sovereign-intension`](predications.md#seme-arch-001) | **SEME-ARCH-001** | `(anchor :sign/keyword :sense/intensional)` | [Hickey's Indirection & Global Registry Constancy](predications.md#seme-arch-001) |
+| [`:seme.arch/open-vertex-projection`](predications.md#seme-arch-002) | **SEME-ARCH-002** | `(project :referent/map :vertex/keyset)` | [Hickey's Open-World Keyset Membership](predications.md#seme-arch-002) |
+| [`:seme.arch/proof-carrying-parse`](predications.md#seme-arch-003) | **SEME-ARCH-003** | `(reify :truth/witness :ast/conformed)` | [Proof-Carrying Conformance & Symbolic Anatomy](predications.md#seme-arch-003) |
+| [`:seme.arch/homoiconic-algebra`](predications.md#seme-arch-004) | **SEME-ARCH-004** | `(rewrite :predicate/ast :morphism/walk)` | [Componential Algebra & Composable Feature Bundles](predications.md#seme-arch-004) |
+| [`:seme.arch/scoped-vertex-overlay`](predications.md#seme-arch-005) | **SEME-ARCH-005** | `(layer :registry/base :registry/vertex)` | [Contextual Overlays for Selectional Restrictions](predications.md#seme-arch-005) |
+| [`:seme.arch/bifunctorial-bridge`](predications.md#seme-arch-006) | **SEME-ARCH-006** | `(iso :spec/intensional :malli/homoiconic)` | [Lowering Mode-D & Lifting Empirical Mode-S Corpora](predications.md#seme-arch-006) |
+| [`:seme.arch/differential-falsification`](predications.md#seme-arch-007) | **SEME-ARCH-007** | `(contrast :vertex/v1 :vertex/v2 :gen/shrink)` | [Cross-Vertex Generative Boundary Stress Testing](predications.md#seme-arch-007) |
+
+---
+
+## Genealogy & Theoretical Foundations
+
+* [Genealogy & Semiotic Foundations](genealogy.md): Tracing Peirce's 1906 *Prolegomena* trichotomy (Seme, Pheme, Delome) and European structuralist componential semantics (Pottier, Greimas, Coseriu) to Rich Hickey's intensional design in `clojure.spec.alpha`.
+* [Triadic Architecture & Module Design](architecture.md): The physical and functional mapping of Peirce's Firstness (`rheme`), Secondness (`pheme`), and Thirdness (`delome`).
