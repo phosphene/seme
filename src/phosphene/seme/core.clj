@@ -34,5 +34,6 @@
 (def contextual-overlay delome/contextual-overlay)
 (def evaluate-overlay delome/evaluate-overlay)
 (def infer-candidate-spec delome/infer-candidate-spec)
+(def rehydrate-unqualified delome/rehydrate-unqualified)
 (def boundary-specimen? delome/boundary-specimen?)
 (def synthesize-boundary-specimen delome/synthesize-boundary-specimen)

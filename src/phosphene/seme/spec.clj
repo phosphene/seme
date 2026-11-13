@@ -157,6 +157,16 @@
             (delome/boundary-specimen? v-a v-b (:specimen ret))
             true))))
 
+(s/fdef delome/rehydrate-unqualified
+  :args (s/or :two (s/cat :raw-map map? :target-ns-or-dict any?)
+              :three (s/cat :raw-map map? :target-ns-or-dict any? :opts map?))
+  :ret (s/keys :req [:rehydrated/valid? :rehydrated/referent])
+  :fn (fn [{:keys [args ret]}]
+        (let [raw-map (if (= :two (first args)) (:raw-map (second args)) (:raw-map (second args)))]
+          ;; Invariant: Rehydrated map must be a map
+          (and (map? (:rehydrated/referent ret))
+               (boolean? (:rehydrated/valid? ret))))))
+
 (s/fdef delome/infer-candidate-spec
   :args (s/cat :corpus (s/with-gen (s/coll-of map? :kind vector?)
                          #(gen/vector (gen/map (gen/elements [:id :count :flag])
