@@ -130,6 +130,22 @@
 
 ;; --- Function Specs: Delome ---
 
+(s/fdef delome/boundary-specimen?
+  :args (s/cat :vertex-a ::vertex :vertex-b ::vertex :specimen map?)
+  :ret boolean?)
+
+(s/fdef delome/synthesize-boundary-specimen
+  :args (s/or :two (s/cat :vertex-a ::vertex :vertex-b ::vertex)
+              :three (s/cat :vertex-a ::vertex :vertex-b ::vertex :opts map?))
+  :ret (s/keys :req-un [::found?])
+  :fn (fn [{:keys [args ret]}]
+        (let [v-a (if (= :two (first args)) (:vertex-a (second args)) (:vertex-a (second args)))
+              v-b (if (= :two (first args)) (:vertex-b (second args)) (:vertex-b (second args)))]
+          ;; Invariant: If a boundary specimen was found, it must satisfy boundary-specimen?
+          (if (:found? ret)
+            (delome/boundary-specimen? v-a v-b (:specimen ret))
+            true))))
+
 (s/fdef delome/infer-candidate-spec
   :args (s/cat :corpus (s/with-gen (s/coll-of map? :kind vector?)
                          #(gen/vector (gen/map (gen/elements [:id :count :flag])
