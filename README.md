@@ -62,7 +62,13 @@ For formal first-order logic axioms and Clojure s-expressions, inspect the [Arch
 
 ---
 
-## 4. Usage Example
+## 4. Projection of `clojure.spec.alpha` Master Coordinates (`CLJ-*`)
+
+`phosphene/seme` formalizes the core principles of Rich Hickey's intensional design into an executable computational ontology. The complete projection and philosophical derivation of the twenty canonical master coordinates—including Keyset Membership (`CLJ-002`), Global Sovereignty (`CLJ-003`, `CLJ-015`), Open-World Accretion (`CLJ-004`), Conformance Witnessing (`CLJ-006`), Generative Falsification (`CLJ-009`, `CLJ-012`), and Fregean Indirection (`CLJ-014`, `CLJ-016`)—is codified in [Projection of clojure.spec.alpha Master Coordinates](doc/wiki/clj-spec-projection.md).
+
+---
+
+## 5. Usage Example
 
 ```clojure
 (require '[clojure.spec.alpha :as s]
@@ -97,7 +103,7 @@ For formal first-order logic axioms and Clojure s-expressions, inspect the [Arch
 
 ---
 
-## 5. Verification & Testing
+## 6. Verification & Testing
 
 Run unit and generative property checks:
 
