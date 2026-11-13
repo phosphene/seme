@@ -1,7 +1,7 @@
 (ns phosphene.seme.delome
   "Peirce's Thirdness: Inferential habits, selectional restrictions,
-   contextual overlays, inductive spec distillation, and automated
-   differential falsification with test.check shrinking.
+   contextual overlays, inductive spec distillation, automated
+   differential falsification, and unqualified ingress boundary defense (CLJ-002-U, TELL-1002).
    Bridges top-down deductive specifications with bottom-up empirical Mode-S data."
   (:require [clojure.set :as set]
             [clojure.spec.alpha :as s]
@@ -64,6 +64,65 @@
       {:inferred/req req-keys
        :inferred/opt opt-keys
        :inferred/preds key-preds})))
+
+;; --- Unqualified Ingress Bridge & Mode-S Boundary Defense (CLJ-002-U, TELL-1002) ---
+
+(defn normalize-raw-key
+  "Converts a raw key (string or keyword) to a simple unqualified keyword name string."
+  [k]
+  (cond
+    (keyword? k) (name k)
+    (string? k) k
+    :else (str k)))
+
+(defn rehydrate-unqualified
+  "Lifts an unqualified Mode-S external map (e.g. from JSON or Python dictionaries)
+   into a sovereign namespaced Mode-D referent map (CLJ-002-U, TELL-1002).
+   Accepts:
+     raw-map: Map with string or unqualified keyword keys (e.g. {\"ipa\": \"/kæt/\"})
+     target-ns-or-dict: Either a namespace prefix (symbol, string, or keyword)
+                        or an explicit dictionary mapping {raw-key-or-str sovereign-coord-kw}.
+   Options:
+     :validate? - when true, validates conformed values against global spec registry (default true)
+     :preserve-unmapped? - when true, retains keys not covered by mapping without namespace (default false)
+   Returns:
+     {:rehydrated/valid? boolean
+      :rehydrated/referent sovereign-namespaced-map
+      :rehydrated/anomalies map-of-coord-to-explain-data}."
+  ([raw-map target-ns-or-dict]
+   (rehydrate-unqualified raw-map target-ns-or-dict {}))
+  ([raw-map target-ns-or-dict {:keys [validate? preserve-unmapped?] :or {validate? true preserve-unmapped? false}}]
+   (let [ns-prefix (when (or (symbol? target-ns-or-dict) (keyword? target-ns-or-dict) (string? target-ns-or-dict))
+                     (name target-ns-or-dict))
+         explicit-map (when (map? target-ns-or-dict)
+                        (reduce-kv (fn [m k v] (assoc m (normalize-raw-key k) v)) {} target-ns-or-dict))
+         key-resolver (fn [raw-k]
+                        (let [norm-k (normalize-raw-key raw-k)]
+                          (if explicit-map
+                            (get explicit-map norm-k)
+                            (when ns-prefix
+                              (keyword ns-prefix norm-k)))))]
+     (loop [entries (seq raw-map)
+            rehydrated {}
+            anomalies {}]
+       (if (empty? entries)
+         (let [valid? (empty? anomalies)]
+           {:rehydrated/valid? valid?
+            :rehydrated/referent rehydrated
+            :rehydrated/anomalies (when-not valid? anomalies)})
+         (let [[k v] (first entries)
+               sovereign-k (key-resolver k)]
+           (if sovereign-k
+             (let [spec (when validate? (s/get-spec sovereign-k))
+                   spec-valid? (if spec (s/valid? spec v) true)
+                   anomaly (when (and spec (not spec-valid?))
+                             (s/explain-data spec v))]
+               (recur (rest entries)
+                      (assoc rehydrated sovereign-k v)
+                      (if anomaly (assoc anomalies sovereign-k anomaly) anomalies)))
+             (recur (rest entries)
+                    (if preserve-unmapped? (assoc rehydrated k v) rehydrated)
+                    anomalies))))))))
 
 ;; --- Differential Falsification Primitives (SEME-ARCH-007) ---
 

@@ -163,7 +163,33 @@
       (is (true? (:found? res)))
       (is (contains? (:specimen res) :test/x))
       (is (not (contains? (:specimen res) :test/y)))
-      (is (true? (delome/boundary-specimen? va vb (:specimen res)))))))
+      (is (true? (delome/boundary-specimen? va vb (:specimen res))))))
+
+  (testing "Unqualified Mode-S ingress bridge and boundary re-hydration (CLJ-002-U, TELL-1002)"
+    (s/def :seme.phon/ipa string?)
+    (s/def :seme.syn/pos #{:noun :verb})
+
+    ;; Case 1: Re-hydrate using a namespace prefix
+    (let [raw-json-map {"ipa" "/kæt/" "pos" :noun "other" 123}
+          res (delome/rehydrate-unqualified raw-json-map :seme.phon {:preserve-unmapped? false})]
+      (is (true? (:rehydrated/valid? res)))
+      (is (= "/kæt/" (get-in res [:rehydrated/referent :seme.phon/ipa])))
+      (is (nil? (:rehydrated/anomalies res))))
+
+    ;; Case 2: Re-hydrate using explicit coordinate alias mapping dictionary
+    (let [raw-dict {"ipa" "/dɒɡ/" "pos" :noun}
+          mapping {"ipa" :seme.phon/ipa "pos" :seme.syn/pos}
+          res (delome/rehydrate-unqualified raw-dict mapping)]
+      (is (true? (:rehydrated/valid? res)))
+      (is (= "/dɒɡ/" (get-in res [:rehydrated/referent :seme.phon/ipa])))
+      (is (= :noun (get-in res [:rehydrated/referent :seme.syn/pos]))))
+
+    ;; Case 3: Re-hydration validation failure detection (grounding bleed guard)
+    (let [corrupt-dict {"ipa" 12345 "pos" :noun}
+          mapping {"ipa" :seme.phon/ipa "pos" :seme.syn/pos}
+          res (delome/rehydrate-unqualified corrupt-dict mapping)]
+      (is (false? (:rehydrated/valid? res)))
+      (is (some? (get-in res [:rehydrated/anomalies :seme.phon/ipa]))))))
 
 (deftest generative-spec-check-test
   (testing "Generative property checks across seme primitives, vertex lattice, and derivation chains"
@@ -176,6 +202,7 @@
                             `pheme/vertex-join
                             `pheme/derivation-chain-witness
                             `delome/infer-candidate-spec
+                            `delome/rehydrate-unqualified
                             `delome/synthesize-boundary-specimen]
                            {:clojure.spec.test.check/opts {:num-tests 100}})]
       (doseq [r res]
