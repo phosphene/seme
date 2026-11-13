@@ -168,6 +168,41 @@
           (and (= referent (:witness/initial ret))
                (<= (count (:witness/steps ret)) (count pipeline))))))
 
+(s/fdef pheme/retract-vertex
+  :args (s/cat :claimed-vertex ::vertex
+               :referent (s/with-gen map?
+                           #(gen/map (s/gen :seme.feat/id)
+                                     (gen/elements ["val" 42 true])
+                                     {:max-elements 4})))
+  :ret (s/keys :req [:retraction/claimed-vertex :retraction/retracted-vertex
+                     :retraction/admitted-keys :retraction/falsified-keys
+                     :retraction/fully-satisfied?])
+  :fn (fn [{:keys [args ret]}]
+        (let [{:keys [claimed-vertex]} args
+              retracted (:retraction/retracted-vertex ret)]
+          ;; Invariant: Claimed vertex subsumes retracted vertex (subsumption ordering)
+          ;; and admitted keys union falsified keys equals claimed required keys
+          (and (pheme/subsumes? claimed-vertex retracted)
+               (= (:vertex/req claimed-vertex)
+                  (set/union (:retraction/admitted-keys ret)
+                             (:retraction/falsified-keys ret)))))))
+
+(s/fdef pheme/lattice-provocation
+  :args (s/cat :claimed-vertex ::vertex
+               :referent (s/with-gen map?
+                           #(gen/map (s/gen :seme.feat/id)
+                                     (gen/elements ["val" 42 true])
+                                     {:max-elements 4})))
+  :ret (s/nilable (s/keys :req [:provocation/type :provocation/claimed-vertex
+                               :provocation/retracted-vertex :provocation/provoked-axioms
+                               :provocation/preserved-axioms]))
+  :fn (fn [{:keys [args ret]}]
+        (let [{:keys [claimed-vertex referent]} args]
+          (if (nil? ret)
+            (empty? (:retraction/falsified-keys (pheme/retract-vertex claimed-vertex referent)))
+            (and (seq (:provocation/provoked-axioms ret))
+                 (= (:provocation/claimed-vertex ret) (:vertex/id claimed-vertex :v/anonymous)))))))
+
 ;; --- Function Specs: Delome & Epistemic Habit Loop ---
 
 (s/fdef delome/boundary-specimen?

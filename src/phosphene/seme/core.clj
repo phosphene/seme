@@ -29,6 +29,8 @@
 (def vertex-meet pheme/vertex-meet)
 (def vertex-join pheme/vertex-join)
 (def derivation-chain-witness pheme/derivation-chain-witness)
+(def retract-vertex pheme/retract-vertex)
+(def lattice-provocation pheme/lattice-provocation)
 (def explain-anomaly pheme/explain-anomaly)
 
 ;; --- Re-exported Delome Primitives (Thirdness) ---

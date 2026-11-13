@@ -2,8 +2,9 @@
   "Peirce's Secondness: Perceptual judgment, conformance, and multi-vertex gating.
    Evaluates open referent maps against sovereign specs and feature bundles,
    producing structured proof-carrying witnesses without boolean blindness.
-   Implements a formal bounded vertex lattice over analytical keysets (CLJ-002)
-   and derivation-chain witnessing for multi-stage s/and conjunction pipelines (CLJ-001-A, CLJ-006)."
+   Implements a formal bounded vertex lattice over analytical keysets (CLJ-002),
+   derivation-chain witnessing for multi-stage s/and conjunction pipelines (CLJ-001-A, CLJ-006),
+   and Poset Lattice Retraction with Structural Provocation (T-SEM-009)."
   (:require [clojure.set :as set]
             [clojure.spec.alpha :as s]))
 
@@ -225,6 +226,81 @@
             (set/union req-a req-b)
             (set/difference (set/union opt-a opt-b) (set/union req-a req-b))
             {:lattice/op :join :lattice/operands [id-a id-b]})))
+
+;; --- Poset Lattice Retraction & Structural Provocation (T-SEM-009) ---
+
+(defn retract-vertex
+  "Evaluates an open referent map against a claimed analytical vertex.
+   If the referent satisfies all required coordinates, the claimed vertex stands.
+   If any required coordinate is missing or invalid, retracts to the maximal sub-vertex
+   (lattice meet) that remains true under the encounter.
+   Returns:
+     {:retraction/claimed-vertex vertex
+      :retraction/retracted-vertex retracted-sub-vertex
+      :retraction/admitted-keys set-of-satisfied-coordinates
+      :retraction/falsified-keys set-of-falsified-coordinates
+      :retraction/anomalies map-of-{falsified-coord explain-data-or-:missing}
+      :retraction/fully-satisfied? boolean}."
+  [claimed-vertex referent]
+  (let [req-keys (vertex-req-keys claimed-vertex)
+        opt-keys (:vertex/opt claimed-vertex #{})
+        ref-keys (if (map? referent) (set (keys referent)) #{})
+        v-id (:vertex/id claimed-vertex :v/anonymous)
+        ;; Partition req-keys into admitted and falsified
+        evaluation (reduce
+                     (fn [acc k]
+                       (if-not (contains? ref-keys k)
+                         (-> acc
+                             (update :falsified conj k)
+                             (assoc-in [:anomalies k] :missing-key))
+                         (let [v (get referent k)
+                               spec (s/get-spec k)]
+                           (if (and spec (not (s/valid? spec v)))
+                             (-> acc
+                                 (update :falsified conj k)
+                                 (assoc-in [:anomalies k] (s/explain-data spec v)))
+                             (update acc :admitted conj k)))))
+                     {:admitted #{} :falsified #{} :anomalies {}}
+                     req-keys)
+        admitted-keys (:admitted evaluation)
+        falsified-keys (:falsified evaluation)
+        anomalies (:anomalies evaluation)
+        fully-satisfied? (empty? falsified-keys)
+        retracted-id (if fully-satisfied?
+                       v-id
+                       (keyword (namespace v-id) (str (name v-id) "-retracted")))
+        retracted-v (vertex retracted-id
+                            admitted-keys
+                            opt-keys
+                            {:retraction/parent v-id
+                             :retraction/loss falsified-keys})]
+    {:retraction/claimed-vertex claimed-vertex
+     :retraction/retracted-vertex retracted-v
+     :retraction/admitted-keys admitted-keys
+     :retraction/falsified-keys falsified-keys
+     :retraction/anomalies (when-not fully-satisfied? anomalies)
+     :retraction/fully-satisfied? fully-satisfied?}))
+
+(defn lattice-provocation
+  "Computes the formal axiomatic provocation generated when an empirical encounter
+   falsifies one or more required leaf predicates of claimed-vertex.
+   Returns nil if fully satisfied.
+   If falsified, returns a structured provocation proof object:
+     {:provocation/type :structural-requirement-falsification
+      :provocation/claimed-vertex v-id
+      :provocation/retracted-vertex retracted-v-id
+      :provocation/provoked-axioms set-of-falsified-coordinates
+      :provocation/preserved-axioms set-of-admitted-coordinates
+      :provocation/retraction retraction-record}."
+  [claimed-vertex referent]
+  (let [ret (retract-vertex claimed-vertex referent)]
+    (when-not (:retraction/fully-satisfied? ret)
+      {:provocation/type :structural-requirement-falsification
+       :provocation/claimed-vertex (:vertex/id claimed-vertex :v/anonymous)
+       :provocation/retracted-vertex (:vertex/id (:retraction/retracted-vertex ret))
+       :provocation/provoked-axioms (:retraction/falsified-keys ret)
+       :provocation/preserved-axioms (:retraction/admitted-keys ret)
+       :provocation/retraction ret})))
 
 ;; --- Diagnostic Anomaly Extraction ---
 
