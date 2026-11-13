@@ -34,3 +34,4 @@
 (def evaluate-overlay delome/evaluate-overlay)
 (def infer-candidate-spec delome/infer-candidate-spec)
 (def boundary-specimen? delome/boundary-specimen?)
+(def synthesize-boundary-specimen delome/synthesize-boundary-specimen)

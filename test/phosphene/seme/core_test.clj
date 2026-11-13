@@ -123,12 +123,20 @@
       (is (= 'clojure.core/string? (get-in candidate [:inferred/preds :id])))
       (is (= 'clojure.core/integer? (get-in candidate [:inferred/preds :count])))))
 
-  (testing "Differential falsification boundary specimen identification"
+  (testing "Differential falsification boundary specimen identification and automated synthesis"
     (s/def :test.bound/v1 (s/keys :req-un [::a]))
     (s/def :test.bound/v2 (s/keys :req-un [::a ::b]))
     (let [boundary-referent {:a 1}]
       (is (true? (delome/boundary-specimen? :test.bound/v1 :test.bound/v2 boundary-referent)))
-      (is (false? (delome/boundary-specimen? :test.bound/v2 :test.bound/v1 boundary-referent))))))
+      (is (false? (delome/boundary-specimen? :test.bound/v2 :test.bound/v1 boundary-referent))))
+
+    (let [va (pheme/vertex :va [:test/x])
+          vb (pheme/vertex :vb [:test/x :test/y])
+          res (delome/synthesize-boundary-specimen va vb)]
+      (is (true? (:found? res)))
+      (is (contains? (:specimen res) :test/x))
+      (is (not (contains? (:specimen res) :test/y)))
+      (is (true? (delome/boundary-specimen? va vb (:specimen res)))))))
 
 (deftest generative-spec-check-test
   (testing "Generative property checks across seme primitives and vertex lattice"
@@ -139,7 +147,8 @@
                             `pheme/subsumes?
                             `pheme/vertex-meet
                             `pheme/vertex-join
-                            `delome/infer-candidate-spec]
+                            `delome/infer-candidate-spec
+                            `delome/synthesize-boundary-specimen]
                            {:clojure.spec.test.check/opts {:num-tests 100}})]
       (doseq [r res]
         (let [sym (:sym r)
