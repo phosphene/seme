@@ -1,11 +1,11 @@
 (ns phosphene.seme.core-test
-  (:require [clojure.test :refer [deftest is testing]]
+  (:require [clojure.test :refer :all]
             [clojure.spec.alpha :as s]
             [clojure.spec.test.alpha :as stest]
-            [phosphene.seme.core :as seme]
             [phosphene.seme.rheme :as rheme]
             [phosphene.seme.pheme :as pheme]
             [phosphene.seme.delome :as delome]
+            [phosphene.seme.chain :as chain]
             [phosphene.seme.spec :as seme-spec]))
 
 (deftest rheme-feature-algebra-test
@@ -137,16 +137,19 @@
       (is (= 1 (count (:witness/steps witness))))
       (is (some? (get-in (:witness/steps witness) [0 :step/anomaly]))))))
 
-(deftest delome-habit-inference-test
-  (testing "Inductive distillation of Mode-D candidate spec from Mode-S empirical corpus"
-    (let [corpus [{:id "1" :count 10 :label "alpha"}
-                  {:id "2" :count 20 :label "beta"}
-                  {:id "3" :count 30 :extra true}]
+(deftest delome-habit-and-synthesis-test
+  (testing "Contextual overlays and empirical spec distillation"
+    (let [base {:attr/score number?}
+          overlay (delome/contextual-overlay base {:attr/score (fn [x] (and (number? x) (pos? x)))})]
+      (is (true? (delome/evaluate-overlay overlay :attr/score 10)))
+      (is (false? (delome/evaluate-overlay overlay :attr/score -5))))
+
+    (let [corpus [{:id "1" :count 10 :tag :a}
+                  {:id "2" :count 20}
+                  {:id "3" :count 30 :tag :b}]
           candidate (delome/infer-candidate-spec corpus)]
-      ;; :id and :count are present in all 3 specimens
       (is (= #{:id :count} (set (:inferred/req candidate))))
-      ;; :label and :extra are present in only a subset
-      (is (= #{:label :extra} (set (:inferred/opt candidate))))
+      (is (= #{:tag} (set (:inferred/opt candidate))))
       (is (= 'clojure.core/string? (get-in candidate [:inferred/preds :id])))
       (is (= 'clojure.core/integer? (get-in candidate [:inferred/preds :count])))))
 
@@ -191,6 +194,43 @@
       (is (false? (:rehydrated/valid? res)))
       (is (some? (get-in res [:rehydrated/anomalies :seme.phon/ipa]))))))
 
+(deftest chain-grammar-test
+  (testing "Slot construction and validation"
+    (let [s1 (chain/slot :subj string?)
+          s2 (chain/slot :verb keyword? :opt)
+          s3 (chain/slot :mods symbol? :star)]
+      (is (true? (chain/slot? s1)))
+      (is (= :subj (:slot/name s1)))
+      (is (= :opt (:slot/cardinality s2)))
+      (is (= :star (:slot/cardinality s3)))))
+
+  (testing "Sequential predicative chain grammar parsing (CLJ-007, CLJ-007-C/A/R)"
+    (let [g (chain/chain-grammar :grammar/sov
+              [(chain/slot :subj (fn [x] (= (:pos x) :noun)))
+               (chain/slot :obj  (fn [x] (= (:pos x) :noun)))
+               (chain/slot :verb (fn [x] (= (:pos x) :verb)))])
+          tok-seq [{:word "cat" :pos :noun}
+                   {:word "fish" :pos :noun}
+                   {:word "eats" :pos :verb}]
+          witness (chain/conformed-chain-witness g tok-seq)]
+      (is (true? (:chain/valid? witness)))
+      (is (= {:word "cat" :pos :noun} (get-in witness [:chain/parsed :subj])))
+      (is (= {:word "fish" :pos :noun} (get-in witness [:chain/parsed :obj])))
+      (is (= {:word "eats" :pos :verb} (get-in witness [:chain/parsed :verb])))
+      (is (empty? (:chain/unconsumed witness))))
+
+    (let [g (chain/chain-grammar :grammar/svo
+              [(chain/slot :subj (fn [x] (= (:pos x) :noun)))
+               (chain/slot :verb (fn [x] (= (:pos x) :verb)))
+               (chain/slot :obj  (fn [x] (= (:pos x) :noun)) :opt)])
+          valid-seq [{:word "dog" :pos :noun} {:word "barks" :pos :verb}]
+          invalid-seq [{:word "barks" :pos :verb} {:word "dog" :pos :noun}]]
+      (is (true? (chain/validate-chain g valid-seq)))
+      (is (false? (chain/validate-chain g invalid-seq)))
+      (let [fail-witness (chain/conformed-chain-witness g invalid-seq)]
+        (is (false? (:chain/valid? fail-witness)))
+        (is (= :subj (:chain/failed-slot fail-witness)))))))
+
 (deftest generative-spec-check-test
   (testing "Generative property checks across seme primitives, vertex lattice, and derivation chains"
     (let [res (stest/check [`rheme/seme
@@ -203,7 +243,9 @@
                             `pheme/derivation-chain-witness
                             `delome/infer-candidate-spec
                             `delome/rehydrate-unqualified
-                            `delome/synthesize-boundary-specimen]
+                            `delome/synthesize-boundary-specimen
+                            `chain/chain-grammar
+                            `chain/conformed-chain-witness]
                            {:clojure.spec.test.check/opts {:num-tests 100}})]
       (doseq [r res]
         (let [sym (:sym r)

@@ -4,10 +4,12 @@
    Root namespace re-exporting fundamental abstractions across:
      - phosphene.seme.rheme  (Firstness:  Unsaturated feature predicates & bundles)
      - phosphene.seme.pheme  (Secondness: Perceptual judgment, conformance, multi-vertex gating & lattice)
-     - phosphene.seme.delome (Thirdness:  Selectional restrictions, habit inference & falsification)"
+     - phosphene.seme.delome (Thirdness:  Selectional restrictions, habit inference & falsification)
+     - phosphene.seme.chain  (Grammar:    Sequential predicative grammars & syntagma interop)"
   (:require [phosphene.seme.rheme :as rheme]
             [phosphene.seme.pheme :as pheme]
-            [phosphene.seme.delome :as delome]))
+            [phosphene.seme.delome :as delome]
+            [phosphene.seme.chain :as chain]))
 
 ;; --- Re-exported Rheme Primitives (Firstness) ---
 
@@ -37,3 +39,12 @@
 (def rehydrate-unqualified delome/rehydrate-unqualified)
 (def boundary-specimen? delome/boundary-specimen?)
 (def synthesize-boundary-specimen delome/synthesize-boundary-specimen)
+
+;; --- Re-exported Chain Primitives (Syntagmatic Predicative Grammars) ---
+
+(def slot chain/slot)
+(def slot? chain/slot?)
+(def chain-grammar chain/chain-grammar)
+(def chain-grammar? chain/chain-grammar?)
+(def conformed-chain-witness chain/conformed-chain-witness)
+(def validate-chain chain/validate-chain)
