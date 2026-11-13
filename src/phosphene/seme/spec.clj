@@ -277,6 +277,33 @@
   :fn (fn [{:keys [ret]}]
         (boolean? (:would-be/holds? ret))))
 
+(s/fdef pheme/retrograde-ancestor-trace
+  :args (s/cat :witness (s/with-gen any?
+                          #(gen/return {:witness/valid? false
+                                        :witness/initial {:count 10}
+                                        :witness/final nil
+                                        :witness/steps [{:step/index 0 :step/predicate :p0 :step/input {:count 10} :step/output {:count 20} :step/valid? true}
+                                                        {:step/index 1 :step/predicate :p1 :step/input {:count 20} :step/output nil :step/valid? false}]
+                                        :witness/failed-step 1}))
+               :failing-path (s/with-gen any? #(gen/return :count)))
+  :ret (s/keys :req [:ancestor/found?])
+  :fn (fn [{:keys [ret]}]
+        (boolean? (:ancestor/found? ret))))
+
+(s/fdef delome/disentangle-provocation-tier
+  :args (s/or :two (s/cat :coord (s/with-gen any? #(gen/elements [:test/a :test/b "unnamespaced" 42]))
+                          :val (s/with-gen any? #(gen/elements ["foo" 42 :bar])))
+              :three (s/cat :coord (s/with-gen any? #(gen/elements [:test/a :test/b "unnamespaced" 42]))
+                            :val (s/with-gen any? #(gen/elements ["foo" 42 :bar]))
+                            :overlay-rules (s/with-gen any? #(gen/return {:test/a (fn [v] (string? v))}))))
+  :ret (s/keys :req [:tier/classification :tier/coord :tier/val :tier/target-subsystem])
+  :fn (fn [{:keys [ret]}]
+        (contains? #{:tier/perimeter-ingress-shock
+                     :tier/constitutive-invariant
+                     :tier/selectional-restriction
+                     :tier/sound}
+                   (:tier/classification ret))))
+
 ;; --- Function Specs: Chain Grammars (CLJ-007) ---
 
 (s/fdef chain/chain-grammar

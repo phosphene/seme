@@ -303,6 +303,44 @@
         (is (true? (:retraction/fully-satisfied? valid-ret)))
         (is (nil? nil-prov)))))
 
+  (testing "Tier disentanglement and retrograde ancestral derivation tracing (T-SEM-010)"
+    ;; 1. Tier Disentanglement
+    (s/def :seme.bio/cell-count pos-int?)
+    ;; Ingress Shock (unnamespaced coordinate)
+    (let [t1 (delome/disentangle-provocation-tier :cell-count 5)]
+      (is (= :tier/perimeter-ingress-shock (:tier/classification t1)))
+      (is (= :ingress-bridge (:tier/target-subsystem t1))))
+
+    ;; Constitutive Invariant Failure (violates global base spec)
+    (let [t2 (delome/disentangle-provocation-tier :seme.bio/cell-count -10)]
+      (is (= :tier/constitutive-invariant (:tier/classification t2)))
+      (is (= :sovereign-registry (:tier/target-subsystem t2))))
+
+    ;; Selectional Restriction Failure (satisfies base spec, violates vertex overlay)
+    (let [overlay {:seme.bio/cell-count (fn [v] (> v 100))}
+          t3 (delome/disentangle-provocation-tier :seme.bio/cell-count 50 overlay)]
+      (is (= :tier/selectional-restriction (:tier/classification t3)))
+      (is (= :vertex-overlay (:tier/target-subsystem t3))))
+
+    ;; Sound
+    (let [overlay {:seme.bio/cell-count (fn [v] (> v 100))}
+          t4 (delome/disentangle-provocation-tier :seme.bio/cell-count 150 overlay)]
+      (is (= :tier/sound (:tier/classification t4)))
+      (is (= :none (:tier/target-subsystem t4))))
+
+    ;; 2. Retrograde Derivation Ancestor Trace
+    ;; Pipeline: stage 0 conforms input by doubling count, stage 1 requires count <= 15
+    (let [p0 (fn [m] (update m :count * 2))
+          p1 (s/spec (fn [m] (<= (:count m) 15)))
+          witness (pheme/derivation-chain-witness [p0 p1] {:count 10})
+          ancestor (pheme/retrograde-ancestor-trace witness :count)]
+      (is (false? (:witness/valid? witness)))
+      (is (= 1 (:witness/failed-step witness)))
+      (is (true? (:ancestor/found? ancestor)))
+      (is (= 0 (:ancestor/step-index ancestor)))
+      (is (= 20 (:ancestor/conditioned-value ancestor)))
+      (is (= 1 (:ancestor/failing-step-index ancestor)))))
+
 (deftest generative-spec-check-test
   (testing "Generative property checks across seme primitives, vertex lattice, and derivation chains"
     (let [res (stest/check [`rheme/seme
@@ -315,8 +353,10 @@
                             `pheme/derivation-chain-witness
                             `pheme/retract-vertex
                             `pheme/lattice-provocation
+                            `pheme/retrograde-ancestor-trace
                             `delome/infer-candidate-spec
                             `delome/rehydrate-unqualified
+                            `delome/disentangle-provocation-tier
                             `delome/contingent-prediction
                             `delome/epistemic-cycle
                             `delome/pragmatic-conditional
