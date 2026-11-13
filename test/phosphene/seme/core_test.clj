@@ -231,6 +231,49 @@
         (is (false? (:chain/valid? fail-witness)))
         (is (= :subj (:chain/failed-slot fail-witness)))))))
 
+(deftest epistemic-cycle-and-contingency-test
+  (testing "Predication precedes prediction (SEME-005, SEME-014)"
+    (s/def :seme.phenom/luminosity (s/and number? #(<= 0.0 % 1.0)))
+    (s/def :seme.phenom/thermal-flux (s/and number? pos?))
+    (s/def :seme.phenom/flame-event (s/keys :req [:seme.phenom/luminosity]))
+    (s/def :seme.delome/heat-expected (s/keys :req [:seme.phenom/thermal-flux]))
+
+    ;; Stage 1: Phemic predication fails on raw encounter
+    (let [invalid-encounter {:seme.phenom/luminosity -5.0}
+          res (delome/epistemic-cycle :seme.phenom/flame-event :seme.delome/heat-expected invalid-encounter)]
+      (is (= :phemic-predication-failed (:stage res)))
+      (is (some? (:anomaly res))))
+
+    ;; Stage 2: Phemic predication succeeds, but contingent prediction fails (Diagnostic Surprise, SEME-010)
+    (let [lum-only-encounter {:seme.phenom/luminosity 0.9}
+          res (delome/epistemic-cycle :seme.phenom/flame-event :seme.delome/heat-expected lum-only-encounter)]
+      (is (= :contingent-prediction-falsified (:stage res)))
+      (is (false? (:logically-necessary? res)))
+      (is (= :diagnostic-surprise (get-in res [:surprise :surprise/kind])))
+      (is (some? (get-in res [:surprise :surprise/anomaly]))))
+
+    ;; Stage 3: Full confirmation through customary habit loop
+    (let [full-flame {:seme.phenom/luminosity 0.95 :seme.phenom/thermal-flux 410.0}
+          res (delome/epistemic-cycle :seme.phenom/flame-event :seme.delome/heat-expected full-flame)]
+      (is (= :delomic-habit-confirmed (:stage res)))
+      (is (= :habit-borne-out (:status res)))
+      (is (false? (:logically-necessary? res)))
+      (is (= full-flame (:conformed res)))))
+
+  (testing "Delomic pragmatic would-be contracts (SEME-012)"
+    (s/def :seme.agent/stimulus (s/keys :req-un [::intensity]))
+    (s/def :seme.agent/response (s/keys :req-un [::action]))
+    (s/def ::intensity number?)
+    (s/def ::action #{:flee :approach})
+
+    (let [reflex-fn (fn [s] {:action (if (> (:intensity s) 50) :flee :approach)})
+          c1 (delome/pragmatic-conditional :seme.agent/stimulus reflex-fn :seme.agent/response {:intensity 80})
+          c2 (delome/pragmatic-conditional :seme.agent/stimulus reflex-fn :seme.agent/response {:intensity 20})]
+      (is (true? (:would-be/holds? c1)))
+      (is (= :flee (get-in c1 [:would-be/consequence :action])))
+      (is (true? (:would-be/holds? c2)))
+      (is (= :approach (get-in c2 [:would-be/consequence :action]))))))
+
 (deftest generative-spec-check-test
   (testing "Generative property checks across seme primitives, vertex lattice, and derivation chains"
     (let [res (stest/check [`rheme/seme
@@ -243,6 +286,9 @@
                             `pheme/derivation-chain-witness
                             `delome/infer-candidate-spec
                             `delome/rehydrate-unqualified
+                            `delome/contingent-prediction
+                            `delome/epistemic-cycle
+                            `delome/pragmatic-conditional
                             `delome/synthesize-boundary-specimen
                             `chain/chain-grammar
                             `chain/conformed-chain-witness]

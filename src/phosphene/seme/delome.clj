@@ -1,15 +1,17 @@
 (ns phosphene.seme.delome
   "Peirce's Thirdness: Inferential habits, selectional restrictions,
    contextual overlays, inductive spec distillation, automated
-   differential falsification, and unqualified ingress boundary defense (CLJ-002-U, TELL-1002).
-   Bridges top-down deductive specifications with bottom-up empirical Mode-S data."
+   differential falsification, unqualified ingress boundary defense (CLJ-002-U, TELL-1002),
+   and the Living Epistemic Habit Loop (SEME-001 through SEME-014, v1.2-Peirce-Hume-Omega).
+   Bridges top-down deductive specifications with bottom-up empirical Mode-S data.
+   Predication precedes prediction; prediction is contingently customary, never logically necessary."
   (:require [clojure.set :as set]
             [clojure.spec.alpha :as s]
             [clojure.spec.gen.alpha :as gen]
             [clojure.test.check.generators :as tc-gen]
             [clojure.test.check.rose-tree :as rose]))
 
-;; --- Contextual Overlays for Selectional Restrictions ---
+;; --- Contextual Overlays for Selectional Restrictions (SEME-013) ---
 
 (defn contextual-overlay
   "Constructs a contextual overlay that wraps a base spec registry with
@@ -26,7 +28,7 @@
     (boolean (pred val))
     false))
 
-;; --- Inductive Habit Distillation (Mode-S -> Mode-D Bridge) ---
+;; --- Inductive Habit Distillation (SEME-006, Mode-S -> Mode-D Bridge) ---
 
 (defn infer-primitive-spec
   "Infers a basic predicate identifier from an observed empirical Clojure value."
@@ -45,7 +47,7 @@
 (defn infer-candidate-spec
   "Inductively distills a candidate schema definition from a Mode-S empirical corpus.
    Given a collection of referent maps, identifies consistently present keys and their
-   most specific observed predicate habits."
+   most specific observed predicate habits (SEME-006)."
   [corpus]
   (when (seq corpus)
     (let [all-keys (set (mapcat keys corpus))
@@ -65,7 +67,7 @@
        :inferred/opt opt-keys
        :inferred/preds key-preds})))
 
-;; --- Unqualified Ingress Bridge & Mode-S Boundary Defense (CLJ-002-U, TELL-1002) ---
+;; --- Unqualified Ingress Bridge & Mode-S Boundary Defense (SEME-003, SEME-004, CLJ-002-U, TELL-1002) ---
 
 (defn normalize-raw-key
   "Converts a raw key (string or keyword) to a simple unqualified keyword name string."
@@ -123,6 +125,107 @@
              (recur (rest entries)
                     (if preserve-unmapped? (assoc rehydrated k v) rehydrated)
                     anomalies))))))))
+
+;; --- Humean Customary Transitions & Contingent Prediction (SEME-007, SEME-008, SEME-010) ---
+
+(defn customary-transition
+  "Encodes Humean custom as a directional transition from an antecedent
+   predication (p1) to an expected consequent property (p2) (SEME-007).
+   Returns a transition habit record."
+  [id antecedent-spec consequent-spec]
+  {:transition/id id
+   :transition/antecedent antecedent-spec
+   :transition/consequent consequent-spec})
+
+(defn contingent-prediction
+  "Evaluates an encounter against a customary habit without assuming deductive necessity.
+   Codifies Hume's fundamental theorem: prediction is not logically necessary (~Box H)
+   across the Mode-D / Mode-S boundary (SEME-008, TELL-1002).
+   Returns:
+     {:logically-necessary? false
+      :status :habit-borne-out | :habit-falsified
+      :conformed conformed-result-or-invalid
+      :surprise (when falsified, Peircean diagnostic surprise with explain-data, SEME-010)}."
+  [delome-spec encounter]
+  (let [outcome (s/conform delome-spec encounter)]
+    (if (s/invalid? outcome)
+      {:logically-necessary? false
+       :status :habit-falsified
+       :conformed outcome
+       :surprise {:surprise/kind :diagnostic-surprise
+                  :surprise/spec delome-spec
+                  :surprise/encounter encounter
+                  :surprise/anomaly (s/explain-data delome-spec encounter)}}
+      {:logically-necessary? false
+       :status :habit-borne-out
+       :conformed outcome
+       :surprise nil})))
+
+;; --- Living Epistemic Habit Loop & Predicative Priority (SEME-005, SEME-014) ---
+
+(defn epistemic-cycle
+  "Executes the full living habit loop (SEME-014), enforcing the foundational axiom
+   that PREDICATION PRECEDES PREDICTION (SEME-005):
+   1. Phemic Perceptual Gate: First predicates the raw encounter against pheme-spec.
+      If raw-encounter is an unqualified Mode-S map, optionally re-hydrates it first.
+      If phemic predication fails, halts immediately with :stage :phemic-predication-failed.
+   2. Contingent Delomic Prediction: Projects delomic expectation onto the conformed phemic judgment.
+      If falsified, surfaces Peircean diagnostic surprise (~Box H) for abductive revision.
+      If confirmed, returns :stage :delomic-habit-confirmed with full conformed state."
+  ([pheme-spec delome-spec raw-encounter]
+   (epistemic-cycle pheme-spec delome-spec raw-encounter {}))
+  ([pheme-spec delome-spec raw-encounter {:keys [ingress-dict]}]
+   (let [predicated-input (if ingress-dict
+                            (:rehydrated/referent (rehydrate-unqualified raw-encounter ingress-dict))
+                            raw-encounter)
+         pheme-judgment (s/conform pheme-spec predicated-input)]
+     (if (s/invalid? pheme-judgment)
+       {:stage :phemic-predication-failed
+        :status :predication-invalid
+        :anomaly (s/explain-data pheme-spec predicated-input)
+        :raw-encounter raw-encounter}
+       (let [prediction-res (contingent-prediction delome-spec pheme-judgment)]
+         (if (= :habit-falsified (:status prediction-res))
+           {:stage :contingent-prediction-falsified
+            :status :habit-falsified
+            :phemic-judgment pheme-judgment
+            :logically-necessary? false
+            :surprise (:surprise prediction-res)}
+           {:stage :delomic-habit-confirmed
+            :status :habit-borne-out
+            :phemic-judgment pheme-judgment
+            :logically-necessary? false
+            :conformed (:conformed prediction-res)}))))))
+
+;; --- Delomic Pragmatic Would-Be Contracts (SEME-012) ---
+
+(defn pragmatic-conditional
+  "Models Peircean Thirdness (the delome) as an operative 'would-be' contract (SEME-012).
+   Given a stimulus-spec, an intervention function, and an expected consequence-spec,
+   verifies whether (action-fn stimulus) yields a result conforming to consequence-spec.
+   Returns:
+     {:would-be/holds? boolean
+      :would-be/stimulus stimulus
+      :would-be/consequence result
+      :would-be/anomaly explain-data-when-failed}."
+  [stimulus-spec action-fn consequence-spec stimulus]
+  (if-not (s/valid? stimulus-spec stimulus)
+    {:would-be/holds? false
+     :would-be/reason :invalid-stimulus
+     :would-be/anomaly (s/explain-data stimulus-spec stimulus)}
+    (let [res (action-fn stimulus)
+          conformed (s/conform consequence-spec res)]
+      (if (s/invalid? conformed)
+        {:would-be/holds? false
+         :would-be/reason :consequence-falsified
+         :would-be/stimulus stimulus
+         :would-be/consequence res
+         :would-be/anomaly (s/explain-data consequence-spec res)}
+        {:would-be/holds? true
+         :would-be/reason :consequence-manifested
+         :would-be/stimulus stimulus
+         :would-be/consequence res
+         :would-be/anomaly nil}))))
 
 ;; --- Differential Falsification Primitives (SEME-ARCH-007) ---
 
