@@ -3,7 +3,7 @@
    and proof-carrying conformance over open referents.
    Root namespace re-exporting fundamental abstractions across:
      - phosphene.seme.rheme  (Firstness:  Unsaturated feature predicates & bundles)
-     - phosphene.seme.pheme  (Secondness: Perceptual judgment, conformance & multi-vertex gating)
+     - phosphene.seme.pheme  (Secondness: Perceptual judgment, conformance, multi-vertex gating & lattice)
      - phosphene.seme.delome (Thirdness:  Selectional restrictions, habit inference & falsification)"
   (:require [phosphene.seme.rheme :as rheme]
             [phosphene.seme.pheme :as pheme]
@@ -19,8 +19,13 @@
 ;; --- Re-exported Pheme Primitives (Secondness) ---
 
 (def conformed-witness pheme/conformed-witness)
+(def vertex pheme/vertex)
+(def vertex? pheme/vertex?)
 (def admits-vertex? pheme/admits-vertex?)
 (def project-vertices pheme/project-vertices)
+(def subsumes? pheme/subsumes?)
+(def vertex-meet pheme/vertex-meet)
+(def vertex-join pheme/vertex-join)
 (def explain-anomaly pheme/explain-anomaly)
 
 ;; --- Re-exported Delome Primitives (Thirdness) ---
@@ -28,3 +33,4 @@
 (def contextual-overlay delome/contextual-overlay)
 (def evaluate-overlay delome/evaluate-overlay)
 (def infer-candidate-spec delome/infer-candidate-spec)
+(def boundary-specimen? delome/boundary-specimen?)
