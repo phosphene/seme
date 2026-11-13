@@ -73,6 +73,16 @@
     #(gen/fmap (fn [slots] (chain/chain-grammar :grammar/test slots))
                (gen/vector (s/gen ::slot) 1 3))))
 
+(s/def ::test-spec-coord
+  (s/with-gen any?
+    #(gen/elements [string? number? integer? boolean? keyword? map? vector?])))
+
+(s/def ::action-fn
+  (s/with-gen ifn?
+    #(gen/elements [(fn [x] {:result x})
+                    (fn [x] (str "action-" x))
+                    (fn [x] {:action (if (number? x) :flee :approach)})])))
+
 ;; --- Function Specs: Rheme ---
 
 (s/fdef rheme/seme
@@ -158,7 +168,7 @@
           (and (= referent (:witness/initial ret))
                (<= (count (:witness/steps ret)) (count pipeline))))))
 
-;; --- Function Specs: Delome ---
+;; --- Function Specs: Delome & Epistemic Habit Loop ---
 
 (s/fdef delome/boundary-specimen?
   :args (s/cat :vertex-a ::vertex :vertex-b ::vertex :specimen map?)
@@ -181,10 +191,8 @@
               :three (s/cat :raw-map map? :target-ns-or-dict any? :opts map?))
   :ret (s/keys :req [:rehydrated/valid? :rehydrated/referent])
   :fn (fn [{:keys [args ret]}]
-        (let [raw-map (if (= :two (first args)) (:raw-map (second args)) (:raw-map (second args)))]
-          ;; Invariant: Rehydrated map must be a map
-          (and (map? (:rehydrated/referent ret))
-               (boolean? (:rehydrated/valid? ret))))))
+        (and (map? (:rehydrated/referent ret))
+             (boolean? (:rehydrated/valid? ret)))))
 
 (s/fdef delome/infer-candidate-spec
   :args (s/cat :corpus (s/with-gen (s/coll-of map? :kind vector?)
@@ -200,6 +208,39 @@
             (and (vector? (:inferred/req ret))
                  (vector? (:inferred/opt ret))
                  (map? (:inferred/preds ret)))))))
+
+(s/fdef delome/contingent-prediction
+  :args (s/cat :delome-spec ::test-spec-coord
+               :encounter (s/with-gen any? #(gen/elements ["hello" 42 :key {:a 1}])))
+  :ret (s/keys :req-un [::logically-necessary? ::status])
+  :fn (fn [{:keys [ret]}]
+        ;; Invariant: Logical necessity is strictly false (Humean contingency, SEME-008)
+        (and (false? (:logically-necessary? ret))
+             (contains? #{:habit-borne-out :habit-falsified} (:status ret)))))
+
+(s/fdef delome/epistemic-cycle
+  :args (s/or :three (s/cat :pheme-spec ::test-spec-coord
+                            :delome-spec ::test-spec-coord
+                            :raw-encounter (s/with-gen any? #(gen/elements ["hello" 42 :key {:a 1}])))
+              :four (s/cat :pheme-spec ::test-spec-coord
+                           :delome-spec ::test-spec-coord
+                           :raw-encounter (s/with-gen any? #(gen/elements ["hello" 42 :key {:a 1}]))
+                           :opts (s/with-gen map? #(gen/return {}))))
+  :ret (s/keys :req-un [::stage ::status])
+  :fn (fn [{:keys [ret]}]
+        (contains? #{:phemic-predication-failed
+                     :contingent-prediction-falsified
+                     :delomic-habit-confirmed}
+                   (:stage ret))))
+
+(s/fdef delome/pragmatic-conditional
+  :args (s/cat :stimulus-spec ::test-spec-coord
+               :action-fn ::action-fn
+               :consequence-spec ::test-spec-coord
+               :stimulus (s/with-gen any? #(gen/elements ["stimulus" 100 {:val 1}])))
+  :ret (s/keys :req [:would-be/holds? :would-be/reason])
+  :fn (fn [{:keys [ret]}]
+        (boolean? (:would-be/holds? ret))))
 
 ;; --- Function Specs: Chain Grammars (CLJ-007) ---
 

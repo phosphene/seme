@@ -37,6 +37,10 @@
 (def evaluate-overlay delome/evaluate-overlay)
 (def infer-candidate-spec delome/infer-candidate-spec)
 (def rehydrate-unqualified delome/rehydrate-unqualified)
+(def customary-transition delome/customary-transition)
+(def contingent-prediction delome/contingent-prediction)
+(def epistemic-cycle delome/epistemic-cycle)
+(def pragmatic-conditional delome/pragmatic-conditional)
 (def boundary-specimen? delome/boundary-specimen?)
 (def synthesize-boundary-specimen delome/synthesize-boundary-specimen)
 
