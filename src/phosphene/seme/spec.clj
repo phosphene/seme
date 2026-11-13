@@ -5,7 +5,8 @@
             [clojure.spec.gen.alpha :as gen]
             [phosphene.seme.rheme :as rheme]
             [phosphene.seme.pheme :as pheme]
-            [phosphene.seme.delome :as delome]))
+            [phosphene.seme.delome :as delome]
+            [phosphene.seme.chain :as chain]))
 
 ;; --- Sovereign Attribute Specs & Generators ---
 
@@ -53,6 +54,24 @@
                (gen/tuple (gen/elements [:v/phon :v/morph :v/sem :v/lex :v/prag])
                           (gen/vector (s/gen :seme.feat/id) 1 3)
                           (gen/vector (s/gen :seme.feat/id) 0 2)))))
+
+(s/def ::slot
+  (s/with-gen
+    (s/and map?
+           #(contains? % :slot/name)
+           #(contains? % :slot/pred)
+           #(contains? % :slot/cardinality))
+    #(gen/fmap (fn [[k card]] (chain/slot k (constantly true) card))
+               (gen/tuple (gen/elements [:s/subj :s/verb :s/obj :s/mod])
+                          (gen/elements [:one :opt :star :plus])))))
+
+(s/def ::chain-grammar
+  (s/with-gen
+    (s/and map?
+           #(contains? % :grammar/id)
+           #(contains? % :grammar/slots))
+    #(gen/fmap (fn [slots] (chain/chain-grammar :grammar/test slots))
+               (gen/vector (s/gen ::slot) 1 3))))
 
 ;; --- Function Specs: Rheme ---
 
@@ -181,3 +200,21 @@
             (and (vector? (:inferred/req ret))
                  (vector? (:inferred/opt ret))
                  (map? (:inferred/preds ret)))))))
+
+;; --- Function Specs: Chain Grammars (CLJ-007) ---
+
+(s/fdef chain/chain-grammar
+  :args (s/cat :id keyword? :slots (s/coll-of ::slot :kind vector?))
+  :ret ::chain-grammar
+  :fn (fn [{:keys [args ret]}]
+        (and (= (:id args) (:grammar/id ret))
+             (= (:slots args) (:grammar/slots ret)))))
+
+(s/fdef chain/conformed-chain-witness
+  :args (s/cat :grammar ::chain-grammar
+               :tokens (s/with-gen (s/coll-of any? :kind vector?)
+                         #(gen/vector (gen/elements ["word" :tok 42]) 0 3)))
+  :ret (s/keys :req [:chain/valid? :chain/grammar :chain/tokens :chain/parsed])
+  :fn (fn [{:keys [args ret]}]
+        (and (= (:tokens args) (:chain/tokens ret))
+             (= (:grammar/id (:grammar args)) (:chain/grammar ret)))))
