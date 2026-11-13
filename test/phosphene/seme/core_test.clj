@@ -110,6 +110,33 @@
       (is (true? (pheme/subsumes? v-join v-phon)))
       (is (true? (pheme/subsumes? v-join v-syn))))))
 
+(deftest pheme-derivation-chain-test
+  (s/def :test.pipe/str-int (s/and string? #(re-matches #"\d+" %)))
+  (s/def :test.pipe/parsed-int (s/conformer #(Integer/parseInt %)))
+  (s/def :test.pipe/positive pos?)
+
+  (testing "Multi-stage sequential derivation chain with re-hydration"
+    (let [pipeline [:test.pipe/str-int :test.pipe/parsed-int :test.pipe/positive]
+          witness (pheme/derivation-chain-witness pipeline "42")]
+      (is (true? (:witness/valid? witness)))
+      (is (= "42" (:witness/initial witness)))
+      (is (= 42 (:witness/final witness)))
+      (is (= 3 (count (:witness/steps witness))))
+      (is (nil? (:witness/failed-step witness)))
+      ;; Check intermediate conformed values
+      (is (= "42" (get-in (:witness/steps witness) [0 :step/output])))
+      (is (= 42 (get-in (:witness/steps witness) [1 :step/output])))
+      (is (= 42 (get-in (:witness/steps witness) [2 :step/output])))))
+
+  (testing "Derivation chain failure localization and anomaly isolation"
+    (let [pipeline [:test.pipe/str-int :test.pipe/parsed-int :test.pipe/positive]
+          witness (pheme/derivation-chain-witness pipeline "-10")]
+      ;; Step 0 passes ("-10" is not digits, so fails at step 0)
+      (is (false? (:witness/valid? witness)))
+      (is (= 0 (:witness/failed-step witness)))
+      (is (= 1 (count (:witness/steps witness))))
+      (is (some? (get-in (:witness/steps witness) [0 :step/anomaly]))))))
+
 (deftest delome-habit-inference-test
   (testing "Inductive distillation of Mode-D candidate spec from Mode-S empirical corpus"
     (let [corpus [{:id "1" :count 10 :label "alpha"}
@@ -139,7 +166,7 @@
       (is (true? (delome/boundary-specimen? va vb (:specimen res)))))))
 
 (deftest generative-spec-check-test
-  (testing "Generative property checks across seme primitives and vertex lattice"
+  (testing "Generative property checks across seme primitives, vertex lattice, and derivation chains"
     (let [res (stest/check [`rheme/seme
                             `rheme/sememe
                             `rheme/plerematic-difference
@@ -147,6 +174,7 @@
                             `pheme/subsumes?
                             `pheme/vertex-meet
                             `pheme/vertex-join
+                            `pheme/derivation-chain-witness
                             `delome/infer-candidate-spec
                             `delome/synthesize-boundary-specimen]
                            {:clojure.spec.test.check/opts {:num-tests 100}})]

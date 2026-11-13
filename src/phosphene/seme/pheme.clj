@@ -2,7 +2,8 @@
   "Peirce's Secondness: Perceptual judgment, conformance, and multi-vertex gating.
    Evaluates open referent maps against sovereign specs and feature bundles,
    producing structured proof-carrying witnesses without boolean blindness.
-   Implements a formal bounded vertex lattice over analytical keysets (CLJ-002)."
+   Implements a formal bounded vertex lattice over analytical keysets (CLJ-002)
+   and derivation-chain witnessing for multi-stage s/and conjunction pipelines (CLJ-001-A, CLJ-006)."
   (:require [clojure.set :as set]
             [clojure.spec.alpha :as s]))
 
@@ -33,6 +34,76 @@
        (contains? x :witness/valid?)
        (contains? x :witness/anatomy)
        (contains? x :witness/referent)))
+
+;; --- Derivation-Chain Witnessing (CLJ-001-A, CLJ-006, SEME-ARCH-003) ---
+
+(defn derivation-chain-witness
+  "Executes a multi-stage sequential predication and conformance pipeline over referent.
+   pipeline is a sequence of spec coordinates or predicate functions [s1 s2 ... sn].
+   In accordance with CLJ-001-A (conjunction re-hydration), each stage receives the conformed
+   output of the preceding stage:
+     referent -> stage_1 -> stage_2 -> ... -> stage_n
+   Returns an auditable derivation witness record:
+     {:witness/valid?       boolean
+      :witness/initial      unmutated input referent
+      :witness/final        conformed output of final stage (or nil if failed)
+      :witness/steps        vector of step records:
+                             [{:step/index i
+                               :step/predicate pred-or-spec
+                               :step/input in
+                               :step/output out
+                               :step/valid? bool
+                               :step/anomaly explain-data}]
+      :witness/failed-step  index of failing step (or nil if all succeeded)}"
+  [pipeline referent]
+  (loop [remaining pipeline
+         idx 0
+         curr-val referent
+         steps []]
+    (if (empty? remaining)
+      {:witness/valid? true
+       :witness/initial referent
+       :witness/final curr-val
+       :witness/steps steps
+       :witness/failed-step nil}
+      (let [stage (first remaining)
+            spec-like? (or (keyword? stage) (s/spec? stage))
+            valid? (if spec-like?
+                     (s/valid? stage curr-val)
+                     (boolean (stage curr-val)))
+            conformed (when valid?
+                        (if spec-like?
+                          (s/conform stage curr-val)
+                          (stage curr-val)))
+            anomaly (when-not valid?
+                      (if spec-like?
+                        (s/explain-data stage curr-val)
+                        {:clojure.spec.alpha/problems [{:path [] :pred stage :val curr-val}]}))
+            step-record {:step/index idx
+                         :step/predicate (if (keyword? stage) stage (str stage))
+                         :step/input curr-val
+                         :step/output conformed
+                         :step/valid? valid?
+                         :step/anomaly anomaly}]
+        (if valid?
+          (recur (rest remaining)
+                 (inc idx)
+                 conformed
+                 (conj steps step-record))
+          {:witness/valid? false
+           :witness/initial referent
+           :witness/final nil
+           :witness/steps (conj steps step-record)
+           :witness/failed-step idx})))))
+
+(defn derivation-witness?
+  "Returns true if x is a valid derivation-chain witness record."
+  [x]
+  (and (map? x)
+       (contains? x :witness/valid?)
+       (contains? x :witness/initial)
+       (contains? x :witness/steps)
+       (vector? (:witness/steps x))))
 
 ;; --- Analytical Vertex Specification & Keyset Extraction ---
 

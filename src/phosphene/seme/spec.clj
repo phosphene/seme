@@ -128,6 +128,17 @@
                (pheme/subsumes? ret vertex-a)
                (pheme/subsumes? ret vertex-b)))))
 
+(s/fdef pheme/derivation-chain-witness
+  :args (s/cat :pipeline (s/with-gen (s/coll-of any? :kind vector?)
+                           (fn [] (gen/return [(s/spec string?) (s/spec (fn [s] (> (count s) 1)))])))
+               :referent (s/with-gen any? (fn [] (gen/elements ["hello" "a" "test-string"]))))
+  :ret (s/keys :req [:witness/valid? :witness/initial :witness/steps])
+  :fn (fn [{:keys [args ret]}]
+        (let [{:keys [referent pipeline]} args]
+          ;; Invariant: Initial referent is preserved, and step count equals completed steps
+          (and (= referent (:witness/initial ret))
+               (<= (count (:witness/steps ret)) (count pipeline))))))
+
 ;; --- Function Specs: Delome ---
 
 (s/fdef delome/boundary-specimen?
