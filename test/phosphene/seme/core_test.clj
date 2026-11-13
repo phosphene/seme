@@ -274,6 +274,35 @@
       (is (true? (:would-be/holds? c2)))
       (is (= :approach (get-in c2 [:would-be/consequence :action]))))))
 
+  (testing "Poset lattice retraction and structural provocation (T-SEM-009)"
+    (s/def :seme.phenom/luminosity (s/and number? #(<= 0.0 % 1.0)))
+    (s/def :seme.phenom/thermal-flux (s/and number? pos?))
+    (let [v-flame (pheme/vertex :v/flame-event [:seme.phenom/luminosity :seme.phenom/thermal-flux])
+          ;; Specimen satisfying luminosity but violating thermal-flux (cryogenic luminous event)
+          anomalous-specimen {:seme.phenom/luminosity 0.85 :seme.phenom/thermal-flux -10.0}
+          retraction (pheme/retract-vertex v-flame anomalous-specimen)
+          provocation (pheme/lattice-provocation v-flame anomalous-specimen)]
+
+      ;; Retraction properties
+      (is (false? (:retraction/fully-satisfied? retraction)))
+      (is (= #{:seme.phenom/luminosity} (:retraction/admitted-keys retraction)))
+      (is (= #{:seme.phenom/thermal-flux} (:retraction/falsified-keys retraction)))
+      (is (true? (pheme/subsumes? v-flame (:retraction/retracted-vertex retraction))))
+
+      ;; Provocation proof object
+      (is (some? provocation))
+      (is (= :structural-requirement-falsification (:provocation/type provocation)))
+      (is (= :v/flame-event (:provocation/claimed-vertex provocation)))
+      (is (= #{:seme.phenom/thermal-flux} (:provocation/provoked-axioms provocation)))
+      (is (= #{:seme.phenom/luminosity} (:provocation/preserved-axioms provocation)))
+
+      ;; Fully satisfied case yields nil provocation
+      (let [valid-specimen {:seme.phenom/luminosity 0.9 :seme.phenom/thermal-flux 150.0}
+            valid-ret (pheme/retract-vertex v-flame valid-specimen)
+            nil-prov (pheme/lattice-provocation v-flame valid-specimen)]
+        (is (true? (:retraction/fully-satisfied? valid-ret)))
+        (is (nil? nil-prov)))))
+
 (deftest generative-spec-check-test
   (testing "Generative property checks across seme primitives, vertex lattice, and derivation chains"
     (let [res (stest/check [`rheme/seme
@@ -284,6 +313,8 @@
                             `pheme/vertex-meet
                             `pheme/vertex-join
                             `pheme/derivation-chain-witness
+                            `pheme/retract-vertex
+                            `pheme/lattice-provocation
                             `delome/infer-candidate-spec
                             `delome/rehydrate-unqualified
                             `delome/contingent-prediction
