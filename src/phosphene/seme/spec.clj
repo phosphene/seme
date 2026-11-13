@@ -1,6 +1,7 @@
 (ns phosphene.seme.spec
   "Formal specification and property invariants for phosphene.seme."
-  (:require [clojure.spec.alpha :as s]
+  (:require [clojure.set :as set]
+            [clojure.spec.alpha :as s]
             [clojure.spec.gen.alpha :as gen]
             [phosphene.seme.rheme :as rheme]
             [phosphene.seme.pheme :as pheme]
@@ -42,7 +43,18 @@
          #(contains? % :witness/anatomy)
          #(contains? % :witness/referent)))
 
-;; --- Function Specs ---
+(s/def ::vertex
+  (s/with-gen
+    (s/and map?
+           #(contains? % :vertex/id)
+           #(contains? % :vertex/req)
+           #(contains? % :vertex/opt))
+    #(gen/fmap (fn [[id reqs opts]] (pheme/vertex id reqs opts {}))
+               (gen/tuple (gen/elements [:v/phon :v/morph :v/sem :v/lex :v/prag])
+                          (gen/vector (s/gen :seme.feat/id) 1 3)
+                          (gen/vector (s/gen :seme.feat/id) 0 2)))))
+
+;; --- Function Specs: Rheme ---
 
 (s/fdef rheme/seme
   :args (s/cat :id :seme.feat/id :pred :seme.feat/pred)
@@ -64,8 +76,10 @@
               a-ids (rheme/feature-ids sememe-a)
               b-ids (rheme/feature-ids sememe-b)]
           ;; Invariant: Union of only-a, only-b, and shared must equal union of a-ids and b-ids
-          (= (clojure.set/union a-ids b-ids)
-             (clojure.set/union (:only-a ret) (:only-b ret) (:shared ret))))))
+          (= (set/union a-ids b-ids)
+             (set/union (:only-a ret) (:only-b ret) (:shared ret))))))
+
+;; --- Function Specs: Pheme & Vertex Lattice ---
 
 (s/fdef pheme/conformed-witness
   :args (s/cat :spec-k (s/with-gen any? #(gen/return any?))
@@ -75,6 +89,46 @@
         (let [{:keys [referent]} args]
           ;; Invariant: Referent is preserved without mutation
           (= referent (:witness/referent ret)))))
+
+(s/fdef pheme/subsumes?
+  :args (s/cat :vertex-a ::vertex :vertex-b ::vertex)
+  :ret boolean?
+  :fn (fn [{:keys [args ret]}]
+        (let [{:keys [vertex-a vertex-b]} args
+              req-a (:vertex/req vertex-a)
+              req-b (:vertex/req vertex-b)]
+          ;; Invariant: subsumes? is true iff req-b is a subset of req-a
+          (= ret (set/subset? req-b req-a)))))
+
+(s/fdef pheme/vertex-meet
+  :args (s/cat :vertex-a ::vertex :vertex-b ::vertex)
+  :ret ::vertex
+  :fn (fn [{:keys [args ret]}]
+        (let [{:keys [vertex-a vertex-b]} args
+              req-a (:vertex/req vertex-a)
+              req-b (:vertex/req vertex-b)
+              ret-req (:vertex/req ret)]
+          ;; Invariant: Meet required keys is exactly the intersection
+          ;; and both parents subsume the meet
+          (and (= ret-req (set/intersection req-a req-b))
+               (pheme/subsumes? vertex-a ret)
+               (pheme/subsumes? vertex-b ret)))))
+
+(s/fdef pheme/vertex-join
+  :args (s/cat :vertex-a ::vertex :vertex-b ::vertex)
+  :ret ::vertex
+  :fn (fn [{:keys [args ret]}]
+        (let [{:keys [vertex-a vertex-b]} args
+              req-a (:vertex/req vertex-a)
+              req-b (:vertex/req vertex-b)
+              ret-req (:vertex/req ret)]
+          ;; Invariant: Join required keys is exactly the union
+          ;; and the join subsumes both parents
+          (and (= ret-req (set/union req-a req-b))
+               (pheme/subsumes? ret vertex-a)
+               (pheme/subsumes? ret vertex-b)))))
+
+;; --- Function Specs: Delome ---
 
 (s/fdef delome/infer-candidate-spec
   :args (s/cat :corpus (s/with-gen (s/coll-of map? :kind vector?)

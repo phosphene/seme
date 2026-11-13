@@ -69,6 +69,47 @@
       (is (pos? (:anomaly/problem-count anomaly)))
       (is (= :test.vertex/phonology (:anomaly/spec anomaly))))))
 
+(deftest pheme-vertex-lattice-test
+  (testing "Vertex construction and record invariants"
+    (let [v (pheme/vertex :v/phonology [:ling/id :phon/ipa] [:phon/pitch])]
+      (is (true? (pheme/vertex? v)))
+      (is (= #{:ling/id :phon/ipa} (:vertex/req v)))
+      (is (= #{:phon/pitch} (:vertex/opt v)))))
+
+  (testing "Keyset subsumption order relation"
+    (let [v-base (pheme/vertex :v/base [:ling/id])
+          v-phon (pheme/vertex :v/phon [:ling/id :phon/ipa])
+          v-full (pheme/vertex :v/full [:ling/id :phon/ipa :syn/pos])]
+      ;; Reflexivity: V >= V
+      (is (true? (pheme/subsumes? v-phon v-phon)))
+      ;; Strict ordering: v-full subsumes v-phon, which subsumes v-base
+      (is (true? (pheme/subsumes? v-full v-phon)))
+      (is (true? (pheme/subsumes? v-phon v-base)))
+      (is (true? (pheme/subsumes? v-full v-base)))
+      ;; Transitivity check
+      (is (false? (pheme/subsumes? v-base v-phon)))
+      (is (false? (pheme/subsumes? v-phon v-full)))))
+
+  (testing "Vertex Meet (/\\) — greatest lower bound"
+    (let [v-phon (pheme/vertex :v/phon [:ling/id :phon/ipa :shared/tag])
+          v-syn  (pheme/vertex :v/syn  [:ling/id :syn/pos :shared/tag])
+          v-meet (pheme/vertex-meet v-phon v-syn)]
+      ;; Required keys is exactly intersection
+      (is (= #{:ling/id :shared/tag} (:vertex/req v-meet)))
+      ;; Both parent vertices subsume their meet
+      (is (true? (pheme/subsumes? v-phon v-meet)))
+      (is (true? (pheme/subsumes? v-syn v-meet)))))
+
+  (testing "Vertex Join (\\/) — least upper bound"
+    (let [v-phon (pheme/vertex :v/phon [:ling/id :phon/ipa])
+          v-syn  (pheme/vertex :v/syn  [:ling/id :syn/pos])
+          v-join (pheme/vertex-join v-phon v-syn)]
+      ;; Required keys is exactly union
+      (is (= #{:ling/id :phon/ipa :syn/pos} (:vertex/req v-join)))
+      ;; The join subsumes both parent vertices
+      (is (true? (pheme/subsumes? v-join v-phon)))
+      (is (true? (pheme/subsumes? v-join v-syn))))))
+
 (deftest delome-habit-inference-test
   (testing "Inductive distillation of Mode-D candidate spec from Mode-S empirical corpus"
     (let [corpus [{:id "1" :count 10 :label "alpha"}
@@ -90,11 +131,14 @@
       (is (false? (delome/boundary-specimen? :test.bound/v2 :test.bound/v1 boundary-referent))))))
 
 (deftest generative-spec-check-test
-  (testing "Generative property checks across seme primitives"
+  (testing "Generative property checks across seme primitives and vertex lattice"
     (let [res (stest/check [`rheme/seme
                             `rheme/sememe
                             `rheme/plerematic-difference
                             `pheme/conformed-witness
+                            `pheme/subsumes?
+                            `pheme/vertex-meet
+                            `pheme/vertex-join
                             `delome/infer-candidate-spec]
                            {:clojure.spec.test.check/opts {:num-tests 100}})]
       (doseq [r res]
