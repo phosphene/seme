@@ -106,6 +106,47 @@
        (contains? x :witness/steps)
        (vector? (:witness/steps x))))
 
+(defn retrograde-ancestor-trace
+  "Given a derivation-chain witness that failed at stage k on failing-path,
+   traverses earlier steps (j < k) backwards to identify the causal conditioning stage
+   that first introduced or modified the value at failing-path.
+   failing-path: vector of keys (e.g. [:temperature] or [:seme.phenom/thermal-flux]) or single key.
+   Returns:
+     {:ancestor/found? boolean
+      :ancestor/step-index index j (or :initial-referent)
+      :ancestor/predicate predicate-of-step-j
+      :ancestor/conditioned-value value-produced-at-step-j
+      :ancestor/failing-step-index k}."
+  [witness failing-path]
+  (let [failed-idx (:witness/failed-step witness)
+        steps (:witness/steps witness)
+        path-vec (if (vector? failing-path) failing-path [failing-path])
+        get-val (fn [obj]
+                  (if (map? obj)
+                    (get-in obj path-vec (get obj (first path-vec)))
+                    obj))]
+    (if (or (nil? failed-idx) (empty? steps))
+      {:ancestor/found? false
+       :ancestor/reason :no-failed-step}
+      (let [candidate-steps (subvec steps 0 failed-idx)
+            ancestor (some (fn [step]
+                             (let [inp-val (get-val (:step/input step))
+                                   out-val (get-val (:step/output step))]
+                               (when (not= inp-val out-val)
+                                 step)))
+                           (rseq candidate-steps))]
+        (if ancestor
+          {:ancestor/found? true
+           :ancestor/step-index (:step/index ancestor)
+           :ancestor/predicate (:step/predicate ancestor)
+           :ancestor/conditioned-value (get-val (:step/output ancestor))
+           :ancestor/failing-step-index failed-idx}
+          {:ancestor/found? true
+           :ancestor/step-index :initial-referent
+           :ancestor/predicate :raw-ingress
+           :ancestor/conditioned-value (get-val (:witness/initial witness))
+           :ancestor/failing-step-index failed-idx})))))
+
 ;; --- Analytical Vertex Specification & Keyset Extraction ---
 
 (defn vertex

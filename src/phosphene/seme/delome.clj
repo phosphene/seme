@@ -126,6 +126,62 @@
                     (if preserve-unmapped? (assoc rehydrated k v) rehydrated)
                     anomalies))))))))
 
+;; --- Tier Disentanglement for Axiomatic Provocation (T-SEM-010, SEME-013) ---
+
+(defn disentangle-provocation-tier
+  "Disentangles the precise ontological level at which an empirical leaf failure occurred.
+   Partitions failures into:
+     - :tier/perimeter-ingress-shock : Raw Mode-S unnamespaced ingress failure (unmapped or unparseable).
+     - :tier/constitutive-invariant  : Violation of the sovereign base spec registered under coord.
+     - :tier/selectional-restriction : Satisfies base coordinate spec, but violates vertex overlay rule.
+     - :tier/sound                   : No failure detected (both base spec and overlay satisfied).
+   Returns:
+     {:tier/classification keyword
+      :tier/coord coordinate-keyword
+      :tier/val observed-value
+      :tier/anomaly explain-data-when-failing
+      :tier/target-subsystem keyword (:ingress-bridge, :sovereign-registry, :vertex-overlay, :none)}."
+  ([coord val]
+   (disentangle-provocation-tier coord val nil))
+  ([coord val overlay-rules]
+   (cond
+     ;; 1. Check if coordinate itself is malformed or not namespaced (perimeter ingress failure)
+     (or (not (keyword? coord)) (nil? (namespace coord)))
+     {:tier/classification :tier/perimeter-ingress-shock
+      :tier/coord coord
+      :tier/val val
+      :tier/anomaly {:error "Unqualified coordinate reached core without namespaced resolution"}
+      :tier/target-subsystem :ingress-bridge}
+
+     ;; 2. Check constitutive invariant (global spec registry)
+     (let [base-spec (s/get-spec coord)]
+       (and base-spec (not (s/valid? base-spec val))))
+     (let [base-spec (s/get-spec coord)]
+       {:tier/classification :tier/constitutive-invariant
+        :tier/coord coord
+        :tier/val val
+        :tier/anomaly (s/explain-data base-spec val)
+        :tier/target-subsystem :sovereign-registry})
+
+     ;; 3. Check contextual selectional overlay
+     (and (map? overlay-rules)
+          (contains? overlay-rules coord)
+          (not (evaluate-overlay overlay-rules coord val)))
+     (let [overlay-pred (get overlay-rules coord)]
+       {:tier/classification :tier/selectional-restriction
+        :tier/coord coord
+        :tier/val val
+        :tier/anomaly {:overlay-rule overlay-pred :val val}
+        :tier/target-subsystem :vertex-overlay})
+
+     ;; 4. Sound
+     :else
+     {:tier/classification :tier/sound
+      :tier/coord coord
+      :tier/val val
+      :tier/anomaly nil
+      :tier/target-subsystem :none})))
+
 ;; --- Humean Customary Transitions & Contingent Prediction (SEME-007, SEME-008, SEME-010) ---
 
 (defn customary-transition
