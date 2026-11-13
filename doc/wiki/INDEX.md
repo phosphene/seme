@@ -33,3 +33,4 @@ Every foundational architectural decision in `phosphene/seme` is formally predic
 
 * [Genealogy & Semiotic Foundations](genealogy.md): Tracing Peirce's 1906 *Prolegomena* trichotomy (Seme, Pheme, Delome) and European structuralist componential semantics (Pottier, Greimas, Coseriu) to Rich Hickey's intensional design in `clojure.spec.alpha`.
 * [Triadic Architecture & Module Design](architecture.md): The physical and functional mapping of Peirce's Firstness (`rheme`), Secondness (`pheme`), and Thirdness (`delome`).
+* [Projection of clojure.spec.alpha Master Coordinates (CLJ-*)](clj-spec-projection.md): Deep mapping and realization of the twenty foundational `clojure.spec.alpha` and Tellman coordinates (`CLJ-001` through `CLJ-016`, `TELL-1001`, `TELL-1002`) within `phosphene/seme`.
