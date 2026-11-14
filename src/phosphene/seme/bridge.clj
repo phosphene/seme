@@ -96,9 +96,16 @@
         cmd-args (rest rest-args)
         cmd (into ["python3" script-path] cmd-args)
         sh-opts (filterv some? (flatten (seq (cond-> []
-                                               (:dir opts) (into [:dir (:dir opts)])))))
-        res (apply sh/sh (concat cmd sh-opts))]
-    {:verifier/success? (zero? (:exit res))
-     :verifier/exit-code (:exit res)
-     :verifier/stdout (:out res)
-     :verifier/stderr (:err res)}))
+                                               (:dir opts) (into [:dir (:dir opts)])))))]
+    (try
+      (let [res (apply sh/sh (concat cmd sh-opts))]
+        {:verifier/success? (zero? (:exit res))
+         :verifier/exit-code (:exit res)
+         :verifier/stdout (:out res)
+         :verifier/stderr (:err res)})
+      (catch java.io.IOException e
+        {:verifier/success? false
+         :verifier/exit-code -1
+         :verifier/stdout ""
+         :verifier/stderr (.getMessage e)
+         :verifier/error-type :io-exception}))))
