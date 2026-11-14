@@ -504,6 +504,95 @@
           (is (= -1 (:verifier/exit-code res)))
           (is (= :io-exception (:verifier/error-type res))))))))
 
+(deftest advanced-predicative-regex-grammars-test
+  (testing "alt-slot deterministic first-match priority and tagged branch AST"
+    (let [g (chain/chain-grammar
+              :grammar/evidence-arc
+              [(chain/slot :claim string?)
+               (chain/alt-slot :evidence
+                               [[:exact-citation (s/and string? #(clojure.string/starts-with? % ">"))]
+                                [:code-snippet   (s/and string? #(clojure.string/starts-with? % "`"))]
+                                [:general-note   string?]]
+                               :plus)])
+          tokens-citation ["Mitchell's principle" "> Intact membrane required"]
+          tokens-code     ["Vectorial coupling" "`pmf = -59*dpH + dPsi`"]
+          tokens-fallback ["General claim" "Plain observational note"]
+
+          wit-citation (chain/conformed-chain-witness g tokens-citation)
+          wit-code     (chain/conformed-chain-witness g tokens-code)
+          wit-fallback (chain/conformed-chain-witness g tokens-fallback)]
+
+      (is (true? (:chain/valid? wit-citation)))
+      (is (= [[:exact-citation "> Intact membrane required"]]
+             (get-in wit-citation [:chain/parsed :evidence])))
+
+      (is (true? (:chain/valid? wit-code)))
+      (is (= [[:code-snippet "`pmf = -59*dpH + dPsi`"]]
+             (get-in wit-code [:chain/parsed :evidence])))
+
+      (is (true? (:chain/valid? wit-fallback)))
+      (is (= [[:general-note "Plain observational note"]]
+             (get-in wit-fallback [:chain/parsed :evidence])))))
+
+  (testing "nested-slot scoped hierarchical sub-grammar without token flattening"
+    (let [ordeal-grammar (chain/chain-grammar
+                           :grammar/underworld-ordeal
+                           [(chain/slot :trial keyword?)
+                            (chain/slot :response keyword?)])
+          hero-myth-grammar (chain/chain-grammar
+                              :grammar/hero-journey
+                              [(chain/slot :departure string?)
+                               (chain/nested-slot :ordeal ordeal-grammar :one)
+                               (chain/slot :return string?)])
+          tokens ["Departure from Highland Milpa"
+                  [:trial/dark-house :response/cigar-glow]
+                  "Return with Corn Seeds"]
+          witness (chain/conformed-chain-witness hero-myth-grammar tokens)]
+
+      (is (true? (:chain/valid? witness)))
+      (is (= "Departure from Highland Milpa" (get-in witness [:chain/parsed :departure])))
+      (is (= "Return with Corn Seeds" (get-in witness [:chain/parsed :return])))
+      (let [nested-wit (get-in witness [:chain/parsed :ordeal])]
+        (is (true? (:chain/valid? nested-wit)))
+        (is (= :grammar/underworld-ordeal (:chain/grammar nested-wit)))
+        (is (= :trial/dark-house (get-in nested-wit [:chain/parsed :trial])))
+        (is (= :response/cigar-glow (get-in nested-wit [:chain/parsed :response]))))))
+
+  (testing "nested-slot with repetition (:plus)"
+    (let [inner-step (chain/chain-grammar
+                       :grammar/step
+                       [(chain/slot :action keyword?)])
+          pipeline-grammar (chain/chain-grammar
+                             :grammar/pipeline
+                             [(chain/slot :start string?)
+                              (chain/nested-slot :steps inner-step :plus)
+                              (chain/slot :finish string?)])
+          tokens ["init" [:step/a] [:step/b] [:step/c] "done"]
+          witness (chain/conformed-chain-witness pipeline-grammar tokens)]
+      (is (true? (:chain/valid? witness)))
+      (is (= 3 (count (get-in witness [:chain/parsed :steps]))))))
+
+  (testing "grammar-commutator measuring structural divergence across competing models"
+    (let [grammar-a (chain/chain-grammar
+                      :grammar/imrad
+                      [(chain/slot :intro string?)
+                       (chain/slot :method string?)
+                       (chain/slot :results string?)])
+          grammar-b (chain/chain-grammar
+                      :grammar/dialectical
+                      [(chain/slot :thesis string?)
+                       (chain/slot :antithesis string?)
+                       (chain/slot :synthesis string?)])
+          tokens ["Background & Problem"
+                  "Experimental Methodology"
+                  "Empirical Observations"]
+          comm (chain/grammar-commutator grammar-a grammar-b tokens)]
+      (is (true? (:commutator/both-valid? comm)))
+      (is (= :both-match (:commutator/regime comm)))
+      (is (= [:intro :method :results] (get-in comm [:commutator/slot-divergence :grammar-a-slots])))
+      (is (= [:thesis :antithesis :synthesis] (get-in comm [:commutator/slot-divergence :grammar-b-slots])))
+      (is (empty? (get-in comm [:commutator/slot-divergence :shared-slots]))))))
+
 (deftest generative-spec-check-test
   (testing "Generative property checks across seme primitives, vertex lattice, and derivation chains"
     (let [res (stest/check [`rheme/seme
@@ -525,6 +614,8 @@
                             `delome/pragmatic-conditional
                             `delome/synthesize-boundary-specimen
                             `chain/chain-grammar
+                            `chain/alt-slot
+                            `chain/grammar-commutator
                             `chain/conformed-chain-witness
                             `comp/complementary-dyad
                             `comp/commutator

@@ -63,7 +63,6 @@
   (s/with-gen
     (s/and map?
            #(contains? % :slot/name)
-           #(contains? % :slot/pred)
            #(contains? % :slot/cardinality))
     #(gen/fmap (fn [[k card]] (chain/slot k (constantly true) card))
                (gen/tuple (gen/elements [:s/subj :s/verb :s/obj :s/mod])
@@ -316,6 +315,27 @@
   :fn (fn [{:keys [args ret]}]
         (and (= (:id args) (:grammar/id ret))
              (= (:slots args) (:grammar/slots ret)))))
+
+(s/fdef chain/alt-slot
+  :args (s/or :two (s/cat :id keyword? :branches (s/with-gen (s/coll-of vector?)
+                                                   #(gen/return [[:str string?] [:num number?]])))
+              :three (s/cat :id keyword?
+                            :branches (s/with-gen (s/coll-of vector?)
+                                        #(gen/return [[:str string?] [:num number?]]))
+                            :cardinality (s/with-gen keyword?
+                                           #(gen/elements [:one :opt :star :plus]))))
+  :ret ::slot
+  :fn (fn [{:keys [ret]}]
+        (chain/slot? ret)))
+
+(s/fdef chain/grammar-commutator
+  :args (s/cat :g-a ::chain-grammar
+               :g-b ::chain-grammar
+               :tokens (s/with-gen (s/coll-of any? :kind vector?)
+                         #(gen/return ["token1" 42])))
+  :ret (s/keys :req [:commutator/both-valid? :commutator/regime :commutator/witness-a :commutator/witness-b :commutator/slot-divergence])
+  :fn (fn [{:keys [ret]}]
+        (boolean? (:commutator/both-valid? ret))))
 
 (s/fdef chain/conformed-chain-witness
   :args (s/cat :grammar ::chain-grammar
