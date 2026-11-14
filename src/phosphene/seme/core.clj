@@ -10,7 +10,9 @@
             [phosphene.seme.pheme :as pheme]
             [phosphene.seme.delome :as delome]
             [phosphene.seme.chain :as chain]
-            [phosphene.seme.complementarity :as comp]))
+            [phosphene.seme.complementarity :as comp]
+            [phosphene.seme.markdown :as md]
+            [phosphene.seme.bridge :as bridge]))
 
 ;; --- Re-exported Rheme Primitives (Firstness) ---
 
@@ -68,3 +70,12 @@
 (def sovereign-hinges-distinct? comp/sovereign-hinges-distinct?)
 (def incommensurability-dossier comp/incommensurability-dossier)
 (def dual-aspect-witness comp/dual-aspect-witness)
+
+;; --- Re-exported Markdown & Python Interop Primitives (T-SEM-012) ---
+
+(def parse-markdown-blocks md/parse-markdown-blocks)
+(def read-markdown-file md/read-markdown-file)
+(def tokenize-text md/tokenize-text)
+(def ingest-manifest-entries bridge/ingest-manifest-entries)
+(def validate-markdown-chain bridge/validate-markdown-chain)
+(def run-python-verifier bridge/run-python-verifier)
