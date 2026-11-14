@@ -12,7 +12,8 @@
             [phosphene.seme.chain :as chain]
             [phosphene.seme.complementarity :as comp]
             [phosphene.seme.markdown :as md]
-            [phosphene.seme.bridge :as bridge]))
+            [phosphene.seme.bridge :as bridge]
+            [phosphene.seme.actant :as actant]))
 
 ;; --- Re-exported Rheme Primitives (Firstness) ---
 
@@ -82,3 +83,19 @@
 (def ingest-manifest-entries bridge/ingest-manifest-entries)
 (def validate-markdown-chain bridge/validate-markdown-chain)
 (def run-python-verifier bridge/run-python-verifier)
+
+;; --- Re-exported Actantial Syntax & Narrative Programs (Greimas) ---
+
+(def actantial-model actant/actantial-model)
+(def actantial-model? actant/actantial-model?)
+(def get-actant actant/get-actant)
+(def actors-for-role actant/actors-for-role)
+(def find-roles-for-actor actant/find-roles-for-actor)
+(def narrative-state actant/narrative-state)
+(def narrative-state? actant/narrative-state?)
+(def conjoined? actant/conjoined?)
+(def disjoined? actant/disjoined?)
+(def narrative-program actant/narrative-program)
+(def narrative-program? actant/narrative-program?)
+(def execute-program actant/execute-program)
+(def canonical-trajectory actant/canonical-trajectory)

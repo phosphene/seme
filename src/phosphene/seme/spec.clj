@@ -10,7 +10,8 @@
             [phosphene.seme.chain :as chain]
             [phosphene.seme.complementarity :as comp]
             [phosphene.seme.markdown :as md]
-            [phosphene.seme.bridge :as bridge]))
+            [phosphene.seme.bridge :as bridge]
+            [phosphene.seme.actant :as actant]))
 
 ;; --- Sovereign Attribute Specs & Generators ---
 
@@ -437,5 +438,92 @@
                         (:entries (second args))
                         (:entries (second args)))]
           (= (count entries) (count ret)))))
+
+;; --- Function Specs: Greimassian Actantial Syntax & Narrative Programs ---
+
+(s/def :actants/role #{:subject :object :sender :receiver :helper :opponent})
+(s/def :actants/roles
+  (s/with-gen (s/map-of keyword? any?)
+    #(gen/return {:subject :actor/hero :object :actor/grail :sender :actor/king :receiver :actor/realm :helper [:actor/mentor] :opponent [:actor/dragon]})))
+
+(s/def ::actantial-model
+  (s/with-gen
+    (s/and map?
+           #(contains? % :actants/roles)
+           #(contains? (:actants/roles %) :subject)
+           #(contains? (:actants/roles %) :object))
+    #(gen/return (actant/actantial-model {:subject :actor/hero :object :actor/grail}))))
+
+(s/fdef actant/actantial-model
+  :args (s/or :one (s/cat :roles-map :actants/roles)
+              :two (s/cat :roles-map :actants/roles :metadata map?))
+  :ret ::actantial-model
+  :fn (fn [{:keys [ret]}]
+        (actant/actantial-model? ret)))
+
+(s/fdef actant/find-roles-for-actor
+  :args (s/cat :model ::actantial-model :actor :actants/entity)
+  :ret (s/coll-of keyword? :kind set?))
+
+(s/def :state/junction #{:conjunction :disjunction})
+(s/def ::narrative-state
+  (s/with-gen
+    (s/and map?
+           #(contains? #{:conjunction :disjunction} (:state/junction %))
+           #(some? (:state/subject %))
+           #(some? (:state/object %)))
+    #(gen/elements [(actant/narrative-state :actor/hero :disjunction :item/grail)
+                    (actant/narrative-state :actor/hero :conjunction :item/grail)])))
+
+(s/def :actants/entity
+  (s/with-gen (s/and (complement nil?) (s/or :kw keyword? :sym symbol? :str string?))
+    #(gen/elements [:actor/hero :actor/king :actor/dragon :actor/grail :actor/mentor :actor/shaman])))
+
+(s/fdef actant/narrative-state
+  :args (s/or :three (s/cat :subject :actants/entity :junction :state/junction :object :actants/entity)
+              :four (s/cat :subject :actants/entity :junction :state/junction :object :actants/entity :metadata map?))
+  :ret ::narrative-state
+  :fn (fn [{:keys [ret]}]
+        (actant/narrative-state? ret)))
+
+(s/def ::narrative-program
+  (s/with-gen
+    (s/and map?
+           #(keyword? (:pn/id %))
+           #(actant/narrative-state? (:pn/initial %))
+           #(actant/narrative-state? (:pn/final %))
+           #(contains? #{:acquisition :deprivation :custom} (:pn/type %)))
+    #(gen/return (actant/narrative-program :pn/quest :actor/hero
+                                           (actant/narrative-state :actor/hero :disjunction :item/grail)
+                                           (actant/narrative-state :actor/hero :conjunction :item/grail)))))
+
+(s/fdef actant/narrative-program
+  :args (s/or :four (s/cat :id keyword? :op-sub :actants/entity :initial ::narrative-state :final ::narrative-state)
+              :five (s/cat :id keyword? :op-sub :actants/entity :initial ::narrative-state :final ::narrative-state :meta map?))
+  :ret ::narrative-program
+  :fn (fn [{:keys [ret]}]
+        (actant/narrative-program? ret)))
+
+(s/def :pn/status #{:success :failed})
+(s/def :pn/result
+  (s/keys :req-un [:pn/status] :opt-un [:pn/id]))
+
+(s/fdef actant/execute-program
+  :args (s/cat :pn ::narrative-program :state ::narrative-state)
+  :ret (s/and map? #(contains? % :status))
+  :fn (fn [{:keys [args ret]}]
+        (let [{:keys [pn state]} args]
+          (if (= :success (:status ret))
+            (= (:state/current ret) (:pn/final pn))
+            (= :failed (:status ret))))))
+
+(s/fdef actant/canonical-trajectory
+  :args (s/cat :phase-map (s/with-gen map?
+                            #(gen/return {:manipulation :contract
+                                          :competence :sword
+                                          :performance :slaying
+                                          :sanction :glory})))
+  :ret (s/keys :req [:trajectory/phases :trajectory/complete? :trajectory/missing :trajectory/order]))
+
 
 
