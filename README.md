@@ -16,7 +16,7 @@ Detailed philosophical genealogy and module architecture are documented in the [
 
 ## 1. Philosophical & Linguistic Genealogy
 
-`phosphene/seme` synthesizes two foundational traditions that resolve Rich Hickey’s critique of nominal type hierarchies:
+`phosphene/seme` synthesizes three foundational traditions that resolve Rich Hickey’s critique of nominal type hierarchies:
 
 1. **C.S. Peirce's 1906 Triad (*Prolegomena to an Apology for Pragmaticism*, CP 4.538):**
    - **Seme / Rheme (Firstness):** An unsaturated qualitative sign or affordance (`"___ is telic"`, `"___ burns"`) prior to propositional assertion.
@@ -27,20 +27,29 @@ Detailed philosophical genealogy and module architecture are documented in the [
    - A **seme** is the minimal distinctive semantic feature (e.g. `[+animate]`, `[+human]`, `[-adult]`).
    - A bundle of distinctive semes forms a **sememe** (the content plane of a linguistic sign).
 
+3. **Algirdas Julien Greimas (*Sémantique structurale*, 1966; *Du Sens*, 1970):**
+   - **Actantial Syntax:** De-complects characters into 6 structural actant positions across 3 orthogonal axes (Desire, Transmission, Power).
+   - **Narrative Programs:** Elementary transformations of state junctions ($S \wedge O \to S \vee O$ or $S \vee O \to S \wedge O$).
+
 See [Genealogy & Semiotic Foundations](doc/wiki/genealogy.md) for the complete theoretical derivation.
 
 ---
 
 ## 2. Architecture & Module Structure
 
-The library is organized around Peirce's 1906 trichotomy:
+The library is organized around Peirce's 1906 trichotomy and extended with predicative regex grammars, Bohrian complementarity, Markdown AST pipelines, and Greimassian actantial syntax:
 
-| Namespace | Peircean Category | Domain Focus | Key Functions |
+| Namespace | Semiometric Category | Domain Focus | Key Functions |
 | :--- | :--- | :--- | :--- |
 | **`phosphene.seme.rheme`** | **Firstness** | Unsaturated predicates & componential feature bundles | `seme`, `sememe`, `bundle-semes`, `plerematic-difference` |
-| **`phosphene.seme.pheme`** | **Secondness** | Perceptual judgment, conformance & multi-vertex gating | `conformed-witness`, `admits-vertex?`, `project-vertices`, `explain-anomaly` |
-| **`phosphene.seme.delome`** | **Thirdness** | Inferential habits, selectional restrictions & falsification | `contextual-overlay`, `evaluate-overlay`, `infer-candidate-spec`, `boundary-specimen?` |
-| **`phosphene.seme.spec`** | **Invariants** | Formal specifications and dense `test.check` property generators | `s/fdef`, `::seme`, `::sememe`, `::witness` |
+| **`phosphene.seme.pheme`** | **Secondness** | Perceptual judgment, conformance, multi-vertex gating & vertex lattice | `conformed-witness`, `admits-vertex?`, `project-vertices`, `vertex-meet`, `vertex-join`, `retract-vertex` |
+| **`phosphene.seme.delome`** | **Thirdness** | Inferential habits, selectional restrictions & falsification | `contextual-overlay`, `evaluate-overlay`, `infer-candidate-spec`, `boundary-specimen?`, `epistemic-cycle` |
+| **`phosphene.seme.chain`** | **Syntagmatic Grammars** | Predicative regex grammars over token sequences | `chain-grammar`, `slot`, `alt-slot`, `nested-slot`, `grammar-commutator`, `conformed-chain-witness` |
+| **`phosphene.seme.actant`** | **Narrative Syntax** | Greimassian actants, junctions & state transformations | `actantial-model`, `find-roles-for-actor`, `narrative-state`, `narrative-program`, `execute-program`, `canonical-trajectory` |
+| **`phosphene.seme.complementarity`** | **Quantum Semiotics** | Bohrian non-commutative complementarity & hinge sovereignty | `complementary-dyad`, `commutator`, `assert-non-collapsible!`, `incommensurability-dossier` |
+| **`phosphene.seme.markdown`** | **AST Ingress** | Coordinate-preserving Markdown block parser | `parse-markdown-blocks`, `read-markdown-file`, `tokenize-text` |
+| **`phosphene.seme.bridge`** | **Polyglot Interop** | Python JSON manifest ingress & external verifier runners | `ingest-manifest-entries`, `validate-markdown-chain`, `run-python-verifier` |
+| **`phosphene.seme.spec`** | **Invariants** | Formal specifications and dense `test.check` property generators | `s/fdef`, `::seme`, `::sememe`, `::witness`, `::chain-grammar`, `::actantial-model` |
 
 See [Triadic Architecture & Module Design](doc/wiki/architecture.md) for data flow and Tellman naming compliance.
 
@@ -64,12 +73,13 @@ For formal first-order logic axioms and Clojure s-expressions, inspect the [Arch
 
 ## 4. Projection of `clojure.spec.alpha` Master Coordinates (`CLJ-*`)
 
-`phosphene/seme` formalizes the core principles of Rich Hickey's intensional design into an executable computational ontology. The complete projection and philosophical derivation of the twenty canonical master coordinates—including Keyset Membership (`CLJ-002`), Global Sovereignty (`CLJ-003`, `CLJ-015`), Open-World Accretion (`CLJ-004`), Conformance Witnessing (`CLJ-006`), Generative Falsification (`CLJ-009`, `CLJ-012`), and Fregean Indirection (`CLJ-014`, `CLJ-016`)—is codified in [Projection of clojure.spec.alpha Master Coordinates](doc/wiki/clj-spec-projection.md).
+`phosphene/seme` formalizes the core principles of Rich Hickey's intensional design into an executable computational ontology. The complete projection and philosophical derivation of the canonical master coordinates—including Keyset Membership (`CLJ-002`), Global Sovereignty (`CLJ-003`, `CLJ-015`), Open-World Accretion (`CLJ-004`), Conformance Witnessing (`CLJ-006`), Alt-Branching Priority (`CLJ-007-ALT`), Scoped Hierarchical Nesting (`CLJ-007-NEST`), Generative Falsification (`CLJ-009`, `CLJ-012`), and Fregean Indirection (`CLJ-014`, `CLJ-016`)—is codified in [Projection of clojure.spec.alpha Master Coordinates](doc/wiki/clj-spec-projection.md).
 
 ---
 
-## 5. Usage Example
+## 5. Usage Examples
 
+### Multi-Vertex Projection & Conformance
 ```clojure
 (require '[clojure.spec.alpha :as s]
          '[phosphene.seme.core :as seme])
@@ -101,11 +111,54 @@ For formal first-order logic axioms and Clojure s-expressions, inspect the [Arch
 (get-in projections [:syntax :witness/valid?])    ;=> true
 ```
 
+### Predicative Regex Grammars with Labeled Alternatives & Nesting
+```clojure
+(require '[phosphene.seme.chain :as chain])
+
+(def discourse-grammar
+  (chain/chain-grammar
+    :grammar/discourse
+    [(chain/slot :claim (s/and string? #(str/starts-with? % "Claim:")))
+     (chain/alt-slot :evidence
+       [[:exact-quote (s/and string? #(str/starts-with? % ">"))]
+        [:code-block  (s/and string? #(str/starts-with? % "`"))]
+        [:fallback    string?]]
+       :plus)
+     (chain/slot :conclusion (s/and string? #(str/starts-with? % "Therefore,")))]))
+
+(def parse (chain/conformed-chain-witness discourse-grammar tokens))
+(:chain/valid? parse) ;=> true
+```
+
+### Greimassian Actantial Models & Narrative Programs
+```clojure
+(require '[phosphene.seme.actant :as actant])
+
+(def model (actant/actantial-model
+             {:subject  :actor/hero
+              :object   :actor/grail
+              :sender   :actor/king
+              :receiver :actor/realm
+              :helper   [:actor/merlin :actor/sword]
+              :opponent [:actor/dragon]}))
+
+(actant/find-roles-for-actor model :actor/merlin)
+;;=> #{:helper}
+
+;; Narrative State Transitions
+(def initial-lack (actant/narrative-state :actor/hero :disjunction :actor/grail))
+(def final-gain   (actant/narrative-state :actor/hero :conjunction :actor/grail))
+(def quest-pn     (actant/narrative-program :pn/grail-quest :actor/hero initial-lack final-gain))
+
+(actant/execute-program quest-pn initial-lack)
+;;=> {:status :success, :pn/id :pn/grail-quest, :state/current ...}
+```
+
 ---
 
 ## 6. Verification & Testing
 
-Run unit and generative property checks:
+Run the full unit and generative property test suites across all modules:
 
 ```bash
 clojure -M:runner
