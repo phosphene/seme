@@ -9,6 +9,7 @@
             [phosphene.seme.complementarity :as comp]
             [phosphene.seme.markdown :as md]
             [phosphene.seme.bridge :as bridge]
+            [phosphene.seme.actant :as actant]
             [phosphene.seme.spec :as seme-spec]))
 
 (deftest rheme-feature-algebra-test
@@ -593,6 +594,77 @@
       (is (= [:thesis :antithesis :synthesis] (get-in comm [:commutator/slot-divergence :grammar-b-slots])))
       (is (empty? (get-in comm [:commutator/slot-divergence :shared-slots]))))))
 
+(deftest actantial-syntax-and-narrative-programs-test
+  (testing "Actantial model construction and role mappings"
+    (let [model (actant/actantial-model {:subject :actor/hero
+                                         :object :actor/grail
+                                         :sender :actor/king
+                                         :receiver :actor/community
+                                         :helper [:actor/merlin :actor/excalibur]
+                                         :opponent [:actor/morgoth]})]
+      (is (true? (actant/actantial-model? model)))
+      (is (= :actor/hero (actant/get-actant model :subject)))
+      (is (= :actor/grail (actant/get-actant model :object)))
+      (is (= #{:actor/merlin :actor/excalibur} (actant/actors-for-role model :helper)))
+      (is (= #{:actor/morgoth} (actant/actors-for-role model :opponent)))
+      (is (= #{:subject} (actant/find-roles-for-actor model :actor/hero)))
+      (is (= #{:helper} (actant/find-roles-for-actor model :actor/merlin)))))
+
+  (testing "Syncretism of actants: single actor embodying multiple structural roles"
+    ;; In initiation myths, the Subject is frequently also the Receiver and Sender
+    (let [initiation-model (actant/actantial-model {:subject :actor/shaman
+                                                   :object :actor/wisdom
+                                                   :sender :actor/shaman
+                                                   :receiver :actor/shaman
+                                                   :helper [:actor/spirit-animal]
+                                                   :opponent [:actor/shadow]})]
+      (is (= #{:subject :sender :receiver}
+             (actant/find-roles-for-actor initiation-model :actor/shaman)))))
+
+  (testing "Narrative state junctions (conjunction vs disjunction)"
+    (let [lack (actant/narrative-state :actor/hero :disjunction :item/golden-fleece)
+          possession (actant/narrative-state :actor/hero :conjunction :item/golden-fleece)]
+      (is (true? (actant/narrative-state? lack)))
+      (is (true? (actant/disjoined? lack)))
+      (is (false? (actant/conjoined? lack)))
+      (is (true? (actant/narrative-state? possession)))
+      (is (true? (actant/conjoined? possession)))
+      (is (false? (actant/disjoined? possession)))))
+
+  (testing "Narrative programs (elementary transformations of state)"
+    (let [initial-lack (actant/narrative-state :actor/jason :disjunction :item/fleece)
+          final-gain   (actant/narrative-state :actor/jason :conjunction :item/fleece)
+          quest-pn     (actant/narrative-program :pn/retrieve-fleece :actor/jason initial-lack final-gain)]
+      (is (true? (actant/narrative-program? quest-pn)))
+      (is (= :acquisition (:pn/type quest-pn)))
+
+      ;; Successful program execution
+      (let [exec-res (actant/execute-program quest-pn initial-lack)]
+        (is (= :success (:status exec-res)))
+        (is (= final-gain (:state/current exec-res))))
+
+      ;; Failed program execution (precondition mismatch)
+      (let [wrong-state (actant/narrative-state :actor/other :disjunction :item/fleece)
+            fail-res (actant/execute-program quest-pn wrong-state)]
+        (is (= :failed (:status fail-res)))
+        (is (= :initial-state-mismatch (:reason fail-res))))))
+
+  (testing "Canonical Narrative Schema 4-phase trajectory"
+    (let [myth-phases {:manipulation "Oracle commands quest"
+                       :competence   "Acquires winged sandals and helm of invisibility"
+                       :performance  "Decapitates Gorgon"
+                       :sanction     "Honored by gods and saves Andromeda"}
+          eval-res (actant/canonical-trajectory myth-phases)]
+      (is (true? (:trajectory/complete? eval-res)))
+      (is (empty? (:trajectory/missing eval-res)))
+      (is (= 4 (count (:trajectory/phases eval-res)))))
+
+    (let [incomplete-phases {:manipulation "Contract established"
+                             :performance "Battle occurs"}
+          eval-res (actant/canonical-trajectory incomplete-phases)]
+      (is (false? (:trajectory/complete? eval-res)))
+      (is (= #{:competence :sanction} (:trajectory/missing eval-res))))))
+
 (deftest generative-spec-check-test
   (testing "Generative property checks across seme primitives, vertex lattice, and derivation chains"
     (let [res (stest/check [`rheme/seme
@@ -623,7 +695,13 @@
                             `comp/dual-aspect-witness
                             `md/tokenize-text
                             `md/parse-markdown-blocks
-                            `bridge/ingest-manifest-entries]
+                            `bridge/ingest-manifest-entries
+                            `actant/actantial-model
+                            `actant/find-roles-for-actor
+                            `actant/narrative-state
+                            `actant/narrative-program
+                            `actant/execute-program
+                            `actant/canonical-trajectory]
                            {:clojure.spec.test.check/opts {:num-tests 100}})]
       (doseq [r res]
         (let [sym (:sym r)
