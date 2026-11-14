@@ -54,11 +54,14 @@
 ;; --- Re-exported Chain Primitives (Syntagmatic Predicative Grammars) ---
 
 (def slot chain/slot)
+(def alt-slot chain/alt-slot)
+(def nested-slot chain/nested-slot)
 (def slot? chain/slot?)
 (def chain-grammar chain/chain-grammar)
 (def chain-grammar? chain/chain-grammar?)
 (def conformed-chain-witness chain/conformed-chain-witness)
 (def validate-chain chain/validate-chain)
+(def grammar-commutator chain/grammar-commutator)
 
 ;; --- Re-exported Complementarity Primitives (Non-Commutative Epistemology, T-SEM-013) ---
 
