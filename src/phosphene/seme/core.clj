@@ -9,7 +9,8 @@
   (:require [phosphene.seme.rheme :as rheme]
             [phosphene.seme.pheme :as pheme]
             [phosphene.seme.delome :as delome]
-            [phosphene.seme.chain :as chain]))
+            [phosphene.seme.chain :as chain]
+            [phosphene.seme.complementarity :as comp]))
 
 ;; --- Re-exported Rheme Primitives (Firstness) ---
 
@@ -56,3 +57,14 @@
 (def chain-grammar? chain/chain-grammar?)
 (def conformed-chain-witness chain/conformed-chain-witness)
 (def validate-chain chain/validate-chain)
+
+;; --- Re-exported Complementarity Primitives (Non-Commutative Epistemology, T-SEM-013) ---
+
+(def complementary-dyad comp/complementary-dyad)
+(def complementary-dyad? comp/complementary-dyad?)
+(def commutator comp/commutator)
+(def assert-non-collapsible! comp/assert-non-collapsible!)
+(def extract-hinge-namespace comp/extract-hinge-namespace)
+(def sovereign-hinges-distinct? comp/sovereign-hinges-distinct?)
+(def incommensurability-dossier comp/incommensurability-dossier)
+(def dual-aspect-witness comp/dual-aspect-witness)

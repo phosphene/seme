@@ -6,6 +6,7 @@
             [phosphene.seme.pheme :as pheme]
             [phosphene.seme.delome :as delome]
             [phosphene.seme.chain :as chain]
+            [phosphene.seme.complementarity :as comp]
             [phosphene.seme.spec :as seme-spec]))
 
 (deftest rheme-feature-algebra-test
@@ -341,6 +342,94 @@
       (is (= 20 (:ancestor/conditioned-value ancestor)))
       (is (= 1 (:ancestor/failing-step-index ancestor)))))
 
+(deftest non-commutative-complementarity-test
+  (testing "Wittgensteinian hinge namespace extraction and sovereignty"
+    (is (= :newton.mechanics (comp/extract-hinge-namespace :newton.mechanics/mass)))
+    (is (= :einstein.relativity (comp/extract-hinge-namespace :einstein.relativity/mass)))
+    (is (true? (comp/sovereign-hinges-distinct?
+                 (pheme/vertex :newton.mechanics/v [:newton.mechanics/mass])
+                 (pheme/vertex :einstein.relativity/v [:einstein.relativity/mass])))))
+
+  (testing "Operational non-commutative commutator"
+    ;; Commutative operations: +1 and +2
+    (let [c-comm (comp/commutator #(update % :x + 1) #(update % :x + 2) {:x 0})]
+      (is (true? (:commutator/zero? c-comm)))
+      (is (= 3 (get-in c-comm [:commutator/ab-result :x])))
+      (is (empty? (:commutator/residual c-comm))))
+
+    ;; Non-commutative operations: (* 2) and (+ 3)
+    ;; (T_B (T_A x)) = (2 * x) + 3
+    ;; (T_A (T_B x)) = 2 * (x + 3) = 2x + 6
+    (let [c-non-comm (comp/commutator #(update % :x * 2) #(update % :x + 3) {:x 10})]
+      (is (false? (:commutator/zero? c-non-comm)))
+      (is (= 23 (get-in c-non-comm [:commutator/ab-result :x])))
+      (is (= 26 (get-in c-non-comm [:commutator/ba-result :x])))
+      (is (= {:ab 23 :ba 26} (get-in c-non-comm [:commutator/residual :x])))))
+
+  (testing "Complementary dyad, anti-collapse gate, and incommensurability dossier"
+    ;; Define Newtonian vs Relativistic vertices
+    (s/def :newton.phys/velocity-independent-mass number?)
+    (s/def :newton.phys/spatial-coordinate vector?)
+    (s/def :einstein.rel/invariant-rest-mass number?)
+    (s/def :einstein.rel/spacetime-interval number?)
+
+    (let [v-newton (pheme/vertex :newton.phys/vertex
+                                 [:newton.phys/velocity-independent-mass
+                                  :newton.phys/spatial-coordinate])
+          v-einstein (pheme/vertex :einstein.rel/vertex
+                                   [:einstein.rel/invariant-rest-mass
+                                    :einstein.rel/spacetime-interval])
+          dyad (comp/complementary-dyad :dyad/mechanics v-newton v-einstein
+                                        {:domain :kinematics :scale-separation :meso-vs-relativistic})
+          dossier (comp/incommensurability-dossier dyad)]
+
+      (is (true? (comp/complementary-dyad? dyad)))
+      (is (true? (:dossier/incommensurable? dossier)))
+      (is (= #{:newton.phys/velocity-independent-mass :newton.phys/spatial-coordinate}
+             (:dossier/only-a-keys dossier)))
+      (is (= #{:einstein.rel/invariant-rest-mass :einstein.rel/spacetime-interval}
+             (:dossier/only-b-keys dossier)))
+      (is (= #{:newton.phys :einstein.rel} (:dossier/hinge-namespaces dossier)))
+
+      ;; Anti-collapse invariant breach check
+      (is (thrown-with-msg?
+            clojure.lang.ExceptionInfo
+            #"Anti-Collapse Invariant Breach"
+            (comp/assert-non-collapsible! dyad)))))
+
+  (testing "Bohrian Dual-Aspect Proof Witness & Scale Regimes"
+    (s/def :scale.meso/speed (s/and number? #(<= % 1000.0)))
+    (s/def :scale.meso/mass-invariant? true?)
+    (s/def :scale.rel/gamma (s/and number? #(>= % 1.0)))
+
+    (let [v-meso (pheme/vertex :v/meso-scale [:scale.meso/speed :scale.meso/mass-invariant?])
+          v-rel (pheme/vertex :v/relativistic [:scale.rel/gamma])
+          dyad (comp/complementary-dyad :dyad/scale-transition v-meso v-rel)
+
+          ;; Specimen A: Low-velocity baseball (40 m/s)
+          specimen-baseball {:scale.meso/speed 40.0
+                             :scale.meso/mass-invariant? true
+                             :scale.rel/gamma 1.0}
+          wit-baseball (comp/dual-aspect-witness dyad specimen-baseball)
+
+          ;; Specimen B: High-velocity cosmic muon (gamma = 10, mass invariance fails)
+          specimen-muon {:scale.meso/speed 299000000.0
+                         :scale.meso/mass-invariant? false
+                         :scale.rel/gamma 10.0}
+          wit-muon (comp/dual-aspect-witness dyad specimen-muon)]
+
+      ;; Baseball satisfies both (correspondence limit holds)
+      (is (true? (:witness/both-valid? wit-baseball)))
+      (is (= :both-hold (:witness/regime wit-baseball)))
+      (is (= specimen-baseball (:witness/referent wit-baseball)))
+
+      ;; Muon exceeds meso-scale limit: meso fails, relativistic holds
+      (is (false? (:witness/both-valid? wit-muon)))
+      (is (= :aspect-b-only (:witness/regime wit-muon)))
+      (is (false? (get-in wit-muon [:witness/aspect-a :witness/valid?])))
+      (is (true? (get-in wit-muon [:witness/aspect-b :witness/valid?])))
+      (is (= specimen-muon (:witness/referent wit-muon))))))
+
 (deftest generative-spec-check-test
   (testing "Generative property checks across seme primitives, vertex lattice, and derivation chains"
     (let [res (stest/check [`rheme/seme
@@ -362,7 +451,11 @@
                             `delome/pragmatic-conditional
                             `delome/synthesize-boundary-specimen
                             `chain/chain-grammar
-                            `chain/conformed-chain-witness]
+                            `chain/conformed-chain-witness
+                            `comp/complementary-dyad
+                            `comp/commutator
+                            `comp/incommensurability-dossier
+                            `comp/dual-aspect-witness]
                            {:clojure.spec.test.check/opts {:num-tests 100}})]
       (doseq [r res]
         (let [sym (:sym r)
