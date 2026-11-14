@@ -6,7 +6,8 @@
             [phosphene.seme.rheme :as rheme]
             [phosphene.seme.pheme :as pheme]
             [phosphene.seme.delome :as delome]
-            [phosphene.seme.chain :as chain]))
+            [phosphene.seme.chain :as chain]
+            [phosphene.seme.complementarity :as comp]))
 
 ;; --- Sovereign Attribute Specs & Generators ---
 
@@ -321,3 +322,57 @@
   :fn (fn [{:keys [args ret]}]
         (and (= (:tokens args) (:chain/tokens ret))
              (= (:grammar/id (:grammar args)) (:chain/grammar ret)))))
+
+;; --- Function Specs: Non-Commutative Complementarity (T-SEM-013) ---
+
+(s/def ::complementary-dyad
+  (s/with-gen
+    (s/and map?
+           #(contains? % :dyad/id)
+           #(contains? % :dyad/vertex-a)
+           #(contains? % :dyad/vertex-b)
+           #(contains? % :dyad/incommensurable?))
+    #(gen/fmap (fn [[id v1 v2]] (comp/complementary-dyad id v1 v2 {:incommensurable? true}))
+               (gen/tuple (gen/elements [:dyad/mechanics :dyad/evolution :dyad/semiotics])
+                          (s/gen ::vertex)
+                          (s/gen ::vertex)))))
+
+(s/fdef comp/complementary-dyad
+  :args (s/or :three (s/cat :id keyword? :vertex-a ::vertex :vertex-b ::vertex)
+              :four (s/cat :id keyword? :vertex-a ::vertex :vertex-b ::vertex :opts (s/with-gen map? #(gen/return {}))))
+  :ret ::complementary-dyad
+  :fn (fn [{:keys [ret]}]
+        (comp/complementary-dyad? ret)))
+
+(s/fdef comp/commutator
+  :args (s/cat :trans-a ::action-fn
+               :trans-b ::action-fn
+               :referent (s/with-gen (s/map-of keyword? any?)
+                           #(gen/return {:count 10 :val "x"})))
+  :ret (s/keys :req [:commutator/zero? :commutator/ab-result :commutator/ba-result :commutator/residual])
+  :fn (fn [{:keys [ret]}]
+        (boolean? (:commutator/zero? ret))))
+
+(s/fdef comp/incommensurability-dossier
+  :args (s/cat :dyad ::complementary-dyad)
+  :ret (s/keys :req [:dossier/dyad-id :dossier/only-a-keys :dossier/only-b-keys :dossier/shared-keys :dossier/incommensurable?])
+  :fn (fn [{:keys [args ret]}]
+        (= (:dyad/id (:dyad args)) (:dossier/dyad-id ret))))
+
+(s/fdef comp/dual-aspect-witness
+  :args (s/or :two (s/cat :dyad ::complementary-dyad
+                          :referent (s/with-gen (s/map-of keyword? any?)
+                                      #(gen/return {:val 42})))
+              :four (s/cat :dyad ::complementary-dyad
+                           :referent (s/with-gen (s/map-of keyword? any?)
+                                       #(gen/return {:val 42}))
+                           :trans-a (s/with-gen (s/nilable ::action-fn) #(gen/return nil))
+                           :trans-b (s/with-gen (s/nilable ::action-fn) #(gen/return nil))))
+  :ret (s/keys :req [:witness/dyad-id :witness/aspect-a :witness/aspect-b :witness/both-valid? :witness/regime :witness/referent])
+  :fn (fn [{:keys [args ret]}]
+        (let [referent (cond
+                         (= :two (first args)) (:referent (second args))
+                         (= :four (first args)) (:referent (second args)))]
+          ;; Invariant: referent purity (SEME-COMP-005)
+          (= referent (:witness/referent ret)))))
+
