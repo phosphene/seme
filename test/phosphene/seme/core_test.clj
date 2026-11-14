@@ -7,6 +7,8 @@
             [phosphene.seme.delome :as delome]
             [phosphene.seme.chain :as chain]
             [phosphene.seme.complementarity :as comp]
+            [phosphene.seme.markdown :as md]
+            [phosphene.seme.bridge :as bridge]
             [phosphene.seme.spec :as seme-spec]))
 
 (deftest rheme-feature-algebra-test
@@ -430,6 +432,70 @@
       (is (true? (get-in wit-muon [:witness/aspect-b :witness/valid?])))
       (is (= specimen-muon (:witness/referent wit-muon))))))
 
+(deftest markdown-syntagmatic-chain-and-python-bridge-test
+  (testing "Tokenizing text into distinctive symbol keywords"
+    (let [tokens (md/tokenize-text "Mitchell proposed chemiosmotic coupling across intact lipid membranes!")]
+      (is (= [:mitchell :proposed :chemiosmotic :coupling :across :intact :lipid :membranes] tokens))))
+
+  (testing "Parsing structured Markdown AST blocks with coordinate tags"
+    (let [sample-doc (str "---\nauthor: Mitchell\nyear: 1961\n---\n\n"
+                          "# Bioenergetics\n\n"
+                          "Vectorial metabolism is fundamental.\n\n"
+                          "> Coupling requires intact membranes.\n\n"
+                          "* Electron transport\n* Proton gradient\n")
+          blocks (md/parse-markdown-blocks "doc-mitchell" sample-doc)]
+      (is (= 6 (count blocks)))
+      (is (= :frontmatter (:block-type (nth blocks 0))))
+      (is (= "doc-mitchell:frontmatter" (:coordinate (nth blocks 0))))
+      (is (= :heading (:block-type (nth blocks 1))))
+      (is (= 1 (:level (nth blocks 1))))
+      (is (= :paragraph (:block-type (nth blocks 2))))
+      (is (= :blockquote (:block-type (nth blocks 3))))
+      (is (= :list-item (:block-type (nth blocks 4))))
+      (is (= :list-item (:block-type (nth blocks 5))))))
+
+  (testing "Syntagmatic Chain Grammar parsing over Markdown AST stream"
+    (let [grammar (chain/chain-grammar
+                    :grammar/scientific-note
+                    [(chain/slot :header (fn [b] (= :heading (:block-type b))))
+                     (chain/slot :claim (fn [b] (= :paragraph (:block-type b))))
+                     (chain/slot :evidence (fn [b] (= :blockquote (:block-type b))))])
+          doc-text "# Hypothesis\n\nChemiosmosis explains ATP synthesis.\n\n> Measured proton motive force was 200mV.\n"
+          blocks (md/parse-markdown-blocks "doc-proof" doc-text)
+          witness (chain/conformed-chain-witness grammar blocks)]
+      (is (true? (:chain/valid? witness)))
+      (is (= :grammar/scientific-note (:chain/grammar witness)))
+      (is (= "Hypothesis" (get-in witness [:chain/parsed :header :raw-text])))
+      (is (= "Chemiosmosis explains ATP synthesis." (get-in witness [:chain/parsed :claim :raw-text])))
+      (is (= "Measured proton motive force was 200mV." (get-in witness [:chain/parsed :evidence :raw-text])))))
+
+  (testing "Manifest Ingress Rehydration (Mode-S -> Mode-D Bridge)"
+    (s/def :test.entry/id string?)
+    (s/def :test.entry/unit-of-reason string?)
+    (s/def :test.entry/page pos-int?)
+    (s/def :test.manifest/entry (s/keys :req [:test.entry/id :test.entry/unit-of-reason]
+                                        :opt [:test.entry/page]))
+
+    (let [raw-manifest-entries [{:id "CR-001" :unit_of_reason "Information alone fails" :page 24}
+                                {:id "CR-002" :unit_of_reason "Deep eukaryotic homology" :page 25}]
+          alias-map {:id :test.entry/id
+                     :unit_of_reason :test.entry/unit-of-reason
+                     :page :test.entry/page}
+          rehydrated (bridge/ingest-manifest-entries raw-manifest-entries alias-map)]
+      (is (= 2 (count rehydrated)))
+      (is (true? (get-in rehydrated [0 :rehydrated/valid?])))
+      (is (= "CR-001" (get-in rehydrated [0 :rehydrated/referent :test.entry/id])))
+      (is (= "Information alone fails" (get-in rehydrated [0 :rehydrated/referent :test.entry/unit-of-reason])))
+      (is (= 24 (get-in rehydrated [0 :rehydrated/referent :test.entry/page])))))
+
+  (testing "External Python Verifier Script Invocation"
+    (let [workspace-dir "/home/node/.openclaw/workspace"
+          py-script "work/topic-98577-public-evolutionary-science/scripts/verify_close_read.py"
+          res (bridge/run-python-verifier {:dir workspace-dir} py-script)]
+      (is (true? (:verifier/success? res)))
+      (is (= 0 (:verifier/exit-code res)))
+      (is (clojure.string/includes? (:verifier/stdout res) "AUDIT PASSED")))))
+
 (deftest generative-spec-check-test
   (testing "Generative property checks across seme primitives, vertex lattice, and derivation chains"
     (let [res (stest/check [`rheme/seme
@@ -455,7 +521,10 @@
                             `comp/complementary-dyad
                             `comp/commutator
                             `comp/incommensurability-dossier
-                            `comp/dual-aspect-witness]
+                            `comp/dual-aspect-witness
+                            `md/tokenize-text
+                            `md/parse-markdown-blocks
+                            `bridge/ingest-manifest-entries]
                            {:clojure.spec.test.check/opts {:num-tests 100}})]
       (doseq [r res]
         (let [sym (:sym r)

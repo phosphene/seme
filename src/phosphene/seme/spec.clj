@@ -1,13 +1,16 @@
 (ns phosphene.seme.spec
   "Formal specification and property invariants for phosphene.seme."
   (:require [clojure.set :as set]
+            [clojure.string :as str]
             [clojure.spec.alpha :as s]
             [clojure.spec.gen.alpha :as gen]
             [phosphene.seme.rheme :as rheme]
             [phosphene.seme.pheme :as pheme]
             [phosphene.seme.delome :as delome]
             [phosphene.seme.chain :as chain]
-            [phosphene.seme.complementarity :as comp]))
+            [phosphene.seme.complementarity :as comp]
+            [phosphene.seme.markdown :as md]
+            [phosphene.seme.bridge :as bridge]))
 
 ;; --- Sovereign Attribute Specs & Generators ---
 
@@ -375,4 +378,44 @@
                          (= :four (first args)) (:referent (second args)))]
           ;; Invariant: referent purity (SEME-COMP-005)
           (= referent (:witness/referent ret)))))
+
+;; --- Function Specs: Markdown & Bridge Interop (T-SEM-012) ---
+
+(s/def ::ast-block
+  (s/keys :req-un [::coordinate ::block-type ::tokens ::raw-text]))
+
+(s/fdef md/tokenize-text
+  :args (s/cat :text (s/nilable string?))
+  :ret (s/coll-of keyword? :kind vector?)
+  :fn (fn [{:keys [args ret]}]
+        (if (str/blank? (:text args))
+          (empty? ret)
+          (vector? ret))))
+
+(s/fdef md/parse-markdown-blocks
+  :args (s/cat :doc-id string? :content (s/nilable string?))
+  :ret (s/coll-of map? :kind vector?)
+  :fn (fn [{:keys [ret]}]
+        (every? #(and (contains? % :coordinate)
+                      (contains? % :block-type)
+                      (contains? % :tokens))
+                ret)))
+
+(s/fdef bridge/ingest-manifest-entries
+  :args (s/or :two (s/cat :entries (s/with-gen (s/coll-of map? :kind vector?)
+                                     #(gen/return [{:id "E1" :val 10}]))
+                          :alias-map (s/with-gen (s/map-of keyword? keyword?)
+                                       #(gen/return {:id :entry/id :val :entry/val})))
+              :three (s/cat :entries (s/with-gen (s/coll-of map? :kind vector?)
+                                       #(gen/return [{:id "E1" :val 10}]))
+                            :alias-map (s/with-gen (s/map-of keyword? keyword?)
+                                         #(gen/return {:id :entry/id :val :entry/val}))
+                            :opts (s/with-gen map? #(gen/return {:validate? false}))))
+  :ret (s/coll-of map? :kind vector?)
+  :fn (fn [{:keys [args ret]}]
+        (let [entries (if (= :two (first args))
+                        (:entries (second args))
+                        (:entries (second args)))]
+          (= (count entries) (count ret)))))
+
 
