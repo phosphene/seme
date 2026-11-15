@@ -13,7 +13,8 @@
             [phosphene.seme.complementarity :as comp]
             [phosphene.seme.markdown :as md]
             [phosphene.seme.bridge :as bridge]
-            [phosphene.seme.actant :as actant]))
+            [phosphene.seme.actant :as actant]
+            [phosphene.seme.barthes :as barthes]))
 
 ;; --- Re-exported Rheme Primitives (Firstness) ---
 
@@ -99,3 +100,17 @@
 (def narrative-program? actant/narrative-program?)
 (def execute-program actant/execute-program)
 (def canonical-trajectory actant/canonical-trajectory)
+
+;; --- Re-exported Structural Analysis & Five-Code Braid (Barthes) ---
+
+(def five-codes barthes/five-codes)
+(def narrative-unit-types barthes/narrative-unit-types)
+(def make-lexia barthes/make-lexia)
+(def lexia? barthes/lexia?)
+(def segment-lexias barthes/segment-lexias)
+(def classify-narrative-unit barthes/classify-narrative-unit)
+(def attach-codes barthes/attach-codes)
+(def braid-codes barthes/braid-codes)
+(def extract-code-stream barthes/extract-code-stream)
+(def polyphonic-density barthes/polyphonic-density)
+(def braid-summary barthes/braid-summary)
