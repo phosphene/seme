@@ -12,7 +12,8 @@
             [phosphene.seme.markdown :as md]
             [phosphene.seme.bridge :as bridge]
             [phosphene.seme.actant :as actant]
-            [phosphene.seme.barthes :as barthes]))
+            [phosphene.seme.barthes :as barthes]
+            [phosphene.seme.hermeneutic :as herm]))
 
 ;; --- Sovereign Attribute Specs & Generators ---
 
@@ -602,6 +603,74 @@
 (s/fdef barthes/braid-summary
   :args (s/cat :lexias (s/coll-of ::lexia :kind vector?))
   :ret (s/keys :req [:summary/total-lexias :summary/code-frequencies :summary/unit-frequencies :summary/mean-polyphony]))
+
+;; --- Function Specs: Hermeneutic Code & Veridictory Retardation ---
+
+(s/def :herm/morpheme herm/hermeneutic-morphemes)
+(s/def :herm/veridictory-pole herm/veridictory-poles)
+
+(s/fdef herm/morpheme->veridictory-pole
+  :args (s/cat :morpheme :herm/morpheme)
+  :ret :herm/veridictory-pole)
+
+(s/fdef herm/veridictory-state
+  :args (s/cat :morphemes (s/coll-of :herm/morpheme :kind vector?))
+  :ret (s/keys :req-un [:herm.state/status
+                        :herm.state/veridictory-pole
+                        :herm.state/enigmas-posed
+                        :herm.state/retardation-count
+                        :herm.state/retardation-ratio
+                        :herm.state/sanction-ready?])
+  :fn (fn [{:keys [args ret]}]
+        ;; Premature Sanction Prohibition:
+        ;; sanction-ready? is true IF AND ONLY IF status is :disclosed
+        (if (:sanction-ready? ret)
+          (= :disclosed (:status ret))
+          (not= :disclosed (:status ret)))))
+
+(s/fdef herm/retardation-ratio
+  :args (s/cat :morphemes (s/coll-of :herm/morpheme :kind vector?))
+  :ret (s/and double? #(>= % 0.0)))
+
+(s/def ::hermeneutic-arc
+  (s/with-gen
+    (s/and map?
+           #(contains? % :arc/id)
+           #(contains? % :arc/enigma)
+           #(contains? % :arc/morphemes)
+           #(contains? % :arc/state))
+    #(gen/return (herm/hermeneutic-arc :arc/test "Test Enigma" [:hermeneutic/enigma]))))
+
+(s/fdef herm/hermeneutic-arc
+  :args (s/or :two (s/cat :id (s/or :kw keyword? :str string?) :enigma (s/or :kw keyword? :str string?))
+              :three (s/cat :id (s/or :kw keyword? :str string?) :enigma (s/or :kw keyword? :str string?)
+                            :morphemes (s/coll-of :herm/morpheme :kind vector?)))
+  :ret ::hermeneutic-arc)
+
+(s/fdef herm/step-arc
+  :args (s/cat :arc ::hermeneutic-arc :morpheme :herm/morpheme)
+  :ret ::hermeneutic-arc
+  :fn (fn [{:keys [args ret]}]
+        (let [{:keys [arc]} args]
+          (= (inc (count (:arc/morphemes arc)))
+             (count (:arc/morphemes ret))))))
+
+(s/fdef herm/guard-sanction
+  :args (s/cat :phase-map (s/with-gen map?
+                            #(gen/return {:manipulation "Oracle"
+                                          :competence "Sword"
+                                          :performance "Slay"
+                                          :sanction "Glory"}))
+               :herm-seq (s/coll-of :herm/morpheme :kind vector?))
+  :ret (s/keys :req-un [:herm.guard/status :herm.guard/reason])
+  :fn (fn [{:keys [args ret]}]
+        (let [{:keys [herm-seq]} args
+              v-state (herm/veridictory-state herm-seq)]
+          ;; Invariant: if sanction-ready? is false, status is :blocked
+          (if-not (:sanction-ready? v-state)
+            (= :blocked (:status ret))
+            (= :permitted (:status ret))))))
+
 
 
 

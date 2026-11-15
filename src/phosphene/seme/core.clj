@@ -14,7 +14,8 @@
             [phosphene.seme.markdown :as md]
             [phosphene.seme.bridge :as bridge]
             [phosphene.seme.actant :as actant]
-            [phosphene.seme.barthes :as barthes]))
+            [phosphene.seme.barthes :as barthes]
+            [phosphene.seme.hermeneutic :as herm]))
 
 ;; --- Re-exported Rheme Primitives (Firstness) ---
 
@@ -114,3 +115,15 @@
 (def extract-code-stream barthes/extract-code-stream)
 (def polyphonic-density barthes/polyphonic-density)
 (def braid-summary barthes/braid-summary)
+
+;; --- Re-exported Hermeneutic Code & Veridictory Retardation (Barthes & Greimas) ---
+
+(def hermeneutic-morphemes herm/hermeneutic-morphemes)
+(def retardation-morphemes herm/retardation-morphemes)
+(def veridictory-poles herm/veridictory-poles)
+(def morpheme->veridictory-pole herm/morpheme->veridictory-pole)
+(def veridictory-state herm/veridictory-state)
+(def retardation-ratio herm/retardation-ratio)
+(def hermeneutic-arc herm/hermeneutic-arc)
+(def step-arc herm/step-arc)
+(def guard-sanction herm/guard-sanction)
