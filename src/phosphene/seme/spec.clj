@@ -11,7 +11,8 @@
             [phosphene.seme.complementarity :as comp]
             [phosphene.seme.markdown :as md]
             [phosphene.seme.bridge :as bridge]
-            [phosphene.seme.actant :as actant]))
+            [phosphene.seme.actant :as actant]
+            [phosphene.seme.barthes :as barthes]))
 
 ;; --- Sovereign Attribute Specs & Generators ---
 
@@ -524,6 +525,84 @@
                                           :performance :slaying
                                           :sanction :glory})))
   :ret (s/keys :req [:trajectory/phases :trajectory/complete? :trajectory/missing :trajectory/order]))
+
+;; --- Function Specs: Roland Barthes Structural Analysis & Five-Code Braid ---
+
+(s/def :lexia/id keyword?)
+(s/def :lexia/coordinate string?)
+(s/def :lexia/raw-text string?)
+(s/def :lexia/unit-type barthes/narrative-unit-types)
+(s/def :lexia/codes
+  (s/with-gen (s/map-of barthes/five-codes (s/coll-of any? :kind vector?))
+    #(gen/return {:code/proairetic [:act/move]
+                  :code/hermeneutic [:herm/enigma]
+                  :code/semic [:seme/cold]
+                  :code/symbolic [:sym/light-dark]
+                  :code/cultural [:ref/history]})))
+
+(s/def ::lexia
+  (s/with-gen
+    (s/and map?
+           #(barthes/lexia? %))
+    #(gen/fmap (fn [[id coord tok raw ut]]
+                 (barthes/make-lexia id coord tok raw ut {} {}))
+               (gen/tuple (gen/elements [:lex/one :lex/two :lex/three])
+                          (gen/elements ["doc.md:p:1#L0" "doc.md:p:1#L1"])
+                          (gen/elements [[:the :magnetic :lines] [:conducts :current]])
+                          (gen/elements ["The magnetic lines." "Conducts current."])
+                          (gen/elements [:function/nucleus :function/catalyzer :index/semantic :index/informant])))))
+
+(s/fdef barthes/make-lexia
+  :args (s/or :four (s/cat :id (s/or :kw keyword? :str string?) :coord string? :tokens (s/coll-of keyword? :kind vector?) :raw string?)
+              :six (s/cat :id (s/or :kw keyword? :str string?) :coord string? :tokens (s/coll-of keyword? :kind vector?) :raw string? :ut barthes/narrative-unit-types :codes map?)
+              :seven (s/cat :id (s/or :kw keyword? :str string?) :coord string? :tokens (s/coll-of keyword? :kind vector?) :raw string? :ut barthes/narrative-unit-types :codes map? :meta map?))
+  :ret ::lexia
+  :fn (fn [{:keys [ret]}]
+        (barthes/lexia? ret)))
+
+(s/fdef barthes/segment-lexias
+  :args (s/or :one (s/cat :blocks (s/with-gen (s/coll-of ::md/ast-block :kind vector?)
+                                    #(gen/return [{:coordinate "doc.md:p:1" :block-type :paragraph :raw-text "The wire curves. It conducts." :tokens [:the :wire :curves :it :conducts]}
+                                                  {:coordinate "doc.md:p:2" :block-type :paragraph :raw-text "Observed in London." :tokens [:observed :in :london]}])))
+              :two (s/cat :blocks (s/with-gen (s/coll-of ::md/ast-block :kind vector?)
+                                    #(gen/return [{:coordinate "doc.md:p:1" :block-type :paragraph :raw-text "The wire curves. It conducts." :tokens [:the :wire :curves :it :conducts]}]))
+                          :opts map?))
+  :ret (s/coll-of ::lexia :kind vector?)
+  :fn (fn [{:keys [args ret]}]
+        ;; Coordinate Provenance: every lexia retains parent coordinate prefix
+        (every? #(and (string? (:lexia/coordinate %))
+                      (str/starts-with? (name (:lexia/id %)) (:lexia/coordinate %)))
+                ret)))
+
+(s/fdef barthes/classify-narrative-unit
+  :args (s/or :one (s/cat :lexia ::lexia)
+              :two (s/cat :lexia ::lexia :opts map?))
+  :ret barthes/narrative-unit-types)
+
+(s/fdef barthes/attach-codes
+  :args (s/cat :lexia ::lexia :code-map map?)
+  :ret ::lexia)
+
+(s/fdef barthes/braid-codes
+  :args (s/or :one (s/cat :lexias (s/coll-of ::lexia :kind vector?))
+              :two (s/cat :lexias (s/coll-of ::lexia :kind vector?)
+                          :coder-fn (s/with-gen (s/nilable fn?)
+                                      #(gen/return (constantly {:code/proairetic [:act/observe]})))))
+  :ret (s/coll-of ::lexia :kind vector?))
+
+(s/fdef barthes/extract-code-stream
+  :args (s/or :two (s/cat :lexias (s/coll-of ::lexia :kind vector?) :code-key barthes/five-codes)
+              :three (s/cat :lexias (s/coll-of ::lexia :kind vector?) :code-key barthes/five-codes :keep-empty? boolean?))
+  :ret (s/coll-of (s/and map? #(contains? % :lexia/id) #(contains? % :code) #(contains? % :values)) :kind vector?))
+
+(s/fdef barthes/polyphonic-density
+  :args (s/cat :lexia ::lexia)
+  :ret (s/and int? #(<= 0 % 5)))
+
+(s/fdef barthes/braid-summary
+  :args (s/cat :lexias (s/coll-of ::lexia :kind vector?))
+  :ret (s/keys :req [:summary/total-lexias :summary/code-frequencies :summary/unit-frequencies :summary/mean-polyphony]))
+
 
 
 

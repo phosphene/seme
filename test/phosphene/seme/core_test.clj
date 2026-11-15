@@ -10,6 +10,7 @@
             [phosphene.seme.markdown :as md]
             [phosphene.seme.bridge :as bridge]
             [phosphene.seme.actant :as actant]
+            [phosphene.seme.barthes :as barthes]
             [phosphene.seme.spec :as seme-spec]))
 
 (deftest rheme-feature-algebra-test
@@ -665,6 +666,79 @@
       (is (false? (:trajectory/complete? eval-res)))
       (is (= #{:competence :sanction} (:trajectory/missing eval-res))))))
 
+(deftest barthes-structural-analysis-and-five-codes-test
+  (testing "Lexia construction and validation"
+    (let [l (barthes/make-lexia :doc.md:p:1#L0
+                                "doc.md:p:1"
+                                [:the :magnetic :curves]
+                                "The magnetic curves."
+                                :function/nucleus
+                                {:code/proairetic [:act/observe]})]
+      (is (true? (barthes/lexia? l)))
+      (is (= :doc.md:p:1#L0 (:lexia/id l)))
+      (is (= "doc.md:p:1" (:lexia/coordinate l)))
+      (is (= :function/nucleus (:lexia/unit-type l)))
+      (is (= [:act/observe] (get-in l [:lexia/codes :code/proairetic])))))
+
+  (testing "Coordinate-preserving lexia segmentation from Markdown blocks"
+    (let [doc "# Faraday 1832\n\nThe magnetic lines curve around the wire. They induce current.\n"
+          blocks (md/parse-markdown-blocks "faraday-1832" doc)
+          lexias (barthes/segment-lexias blocks)]
+      ;; 1 heading block + 2 sentence lexias from the paragraph
+      (is (= 3 (count lexias)))
+      (is (= :faraday-1832:h1:0#L0 (:lexia/id (first lexias))))
+      (is (= :faraday-1832:p:1#L0 (:lexia/id (second lexias))))
+      (is (= :faraday-1832:p:1#L1 (:lexia/id (nth lexias 2))))
+      ;; Strict token conservation
+      (is (= [:the :magnetic :lines :curve :around :the :wire] (:lexia/tokens (second lexias))))
+      (is (= [:they :induce :current] (:lexia/tokens (nth lexias 2))))))
+
+  (testing "Narrative unit classification (Nucleus vs Catalyzer vs Indices vs Informant)"
+    (let [l-nuc (barthes/make-lexia :l1 "doc:p:1" [:then :they :transformed :the :energy] "Then they transformed the energy.")
+          l-cat (barthes/make-lexia :l2 "doc:p:2" [:the :soft :mist :lingered] "The soft mist lingered.")
+          l-inf (barthes/make-lexia :l3 "doc:p:3" [:in :the :year :1831] "In the year 1831.")
+          l-ind (barthes/make-lexia :l4 "doc:p:4" [:a :dark :and :melancholy :air] "A dark and melancholy air.")]
+      (is (= :function/nucleus (barthes/classify-narrative-unit l-nuc)))
+      (is (= :function/catalyzer (barthes/classify-narrative-unit l-cat)))
+      (is (= :index/informant (barthes/classify-narrative-unit l-inf)))
+      (is (= :index/semantic (barthes/classify-narrative-unit l-ind)))))
+
+  (testing "The Five-Code Braid (structuration) and projection along single code stream"
+    (let [raw-lexias [(barthes/make-lexia :l1 "doc:p:1" [:faraday :connected :the :battery] "Faraday connected the battery.")
+                      (barthes/make-lexia :l2 "doc:p:2" [:will :the :needle :deflect] "Will the needle deflect?")
+                      (barthes/make-lexia :l3 "doc:p:3" [:a :trembling :anticipation] "A trembling anticipation.")]
+          coder-fn (fn [lexia]
+                     (case (:lexia/id lexia)
+                       :l1 {:code/proairetic [:action/connect-circuit]
+                            :code/cultural [:ref/galvani-volta]}
+                       :l2 {:code/hermeneutic [:herm/enigma-deflection]
+                            :code/symbolic [:sym/cause-effect]}
+                       :l3 {:code/semic [:seme/suspense]}
+                       {}))
+          braided (barthes/braid-codes raw-lexias coder-fn)]
+      (is (= 3 (count braided)))
+      (is (= [:action/connect-circuit] (get-in (first braided) [:lexia/codes :code/proairetic])))
+      (is (= [:herm/enigma-deflection] (get-in (second braided) [:lexia/codes :code/hermeneutic])))
+      (is (= [:seme/suspense] (get-in (nth braided 2) [:lexia/codes :code/semic])))
+
+      ;; Extract single code stream (proairetic)
+      (let [pro-stream (barthes/extract-code-stream braided :code/proairetic)]
+        (is (= 1 (count pro-stream)))
+        (is (= :l1 (:lexia/id (first pro-stream))))
+        (is (= [:action/connect-circuit] (:values (first pro-stream)))))
+
+      ;; Polyphonic density and braid summary
+      (is (= 2 (barthes/polyphonic-density (first braided))))
+      (is (= 2 (barthes/polyphonic-density (second braided))))
+      (is (= 1 (barthes/polyphonic-density (nth braided 2))))
+
+      (let [summary (barthes/braid-summary braided)]
+        (is (= 3 (:summary/total-lexias summary)))
+        (is (== (double 5/3) (:summary/mean-polyphony summary)))
+        (is (= 1 (get-in summary [:summary/code-frequencies :code/proairetic])))
+        (is (= 1 (get-in summary [:summary/code-frequencies :code/hermeneutic])))
+        (is (= 1 (get-in summary [:summary/code-frequencies :code/cultural])))))))
+
 (deftest generative-spec-check-test
   (testing "Generative property checks across seme primitives, vertex lattice, and derivation chains"
     (let [res (stest/check [`rheme/seme
@@ -701,7 +775,15 @@
                             `actant/narrative-state
                             `actant/narrative-program
                             `actant/execute-program
-                            `actant/canonical-trajectory]
+                            `actant/canonical-trajectory
+                            `barthes/make-lexia
+                            `barthes/segment-lexias
+                            `barthes/classify-narrative-unit
+                            `barthes/attach-codes
+                            `barthes/braid-codes
+                            `barthes/extract-code-stream
+                            `barthes/polyphonic-density
+                            `barthes/braid-summary]
                            {:clojure.spec.test.check/opts {:num-tests 100}})]
       (doseq [r res]
         (let [sym (:sym r)
