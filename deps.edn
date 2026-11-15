@@ -3,7 +3,15 @@
         org.clojure/spec.alpha {:mvn/version "0.5.238"}}
  :aliases
  {:test {:extra-paths ["test"]
-         :extra-deps {org.clojure/test.check {:mvn/version "1.1.1"}}}
+         :extra-deps {org.clojure/test.check {:mvn/version "1.1.1"}
+                      phosphene/syntagma {:git/url "https://github.com/phosphene/syntagma.git"
+                                          :git/sha "b5a1df1a74f66d673bad532bf14018b13476a654"}
+                      phosphene/paradigma {:git/url "https://github.com/phosphene/paradigma.git"
+                                           :git/sha "8303c65d6940c79752b0bdaee9f01f20417b4dcb"}}}
   :runner {:extra-paths ["test"]
-           :extra-deps {org.clojure/test.check {:mvn/version "1.1.1"}}
+           :extra-deps {org.clojure/test.check {:mvn/version "1.1.1"}
+                        phosphene/syntagma {:git/url "https://github.com/phosphene/syntagma.git"
+                                            :git/sha "b5a1df1a74f66d673bad532bf14018b13476a654"}
+                        phosphene/paradigma {:git/url "https://github.com/phosphene/paradigma.git"
+                                             :git/sha "8303c65d6940c79752b0bdaee9f01f20417b4dcb"}}
            :main-opts ["-m" "phosphene.seme.runner"]}}}
