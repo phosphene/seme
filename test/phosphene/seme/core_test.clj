@@ -11,6 +11,7 @@
             [phosphene.seme.bridge :as bridge]
             [phosphene.seme.actant :as actant]
             [phosphene.seme.barthes :as barthes]
+            [phosphene.seme.hermeneutic :as herm]
             [phosphene.seme.spec :as seme-spec]))
 
 (deftest rheme-feature-algebra-test
@@ -739,6 +740,85 @@
         (is (= 1 (get-in summary [:summary/code-frequencies :code/hermeneutic])))
         (is (= 1 (get-in summary [:summary/code-frequencies :code/cultural])))))))
 
+(deftest hermeneutic-retardation-state-machine-test
+  (testing "Veridictory state progression across Greimas's Veridictory Square"
+    ;; 1. Unformulated baseline
+    (let [v0 (herm/veridictory-state [])]
+      (is (= :unformulated (:status v0)))
+      (is (= :unformulated (:veridictory-pole v0)))
+      (is (false? (:sanction-ready? v0))))
+
+    ;; 2. Enigma formulation: open disjunction
+    (let [v1 (herm/veridictory-state [:hermeneutic/enigma])]
+      (is (= :open (:status v1)))
+      (is (= :secret (:veridictory-pole v1)))
+      (is (= 1 (:enigmas-posed v1)))
+      (is (= 0 (:retardation-count v1)))
+      (is (false? (:sanction-ready? v1))))
+
+    ;; 3. Retardation via Snare (leurre) -> Lie pole (Seeming + Non-Being)
+    (let [v2 (herm/veridictory-state [:hermeneutic/enigma :hermeneutic/snare])]
+      (is (= :open (:status v2)))
+      (is (= :lie (:veridictory-pole v2)))
+      (is (= 1 (:retardation-count v2)))
+      (is (== 1.0 (:retardation-ratio v2)))
+      (is (false? (:sanction-ready? v2))))
+
+    ;; 4. Retardation via Partial Answer -> Secret pole (Being + Non-Seeming)
+    (let [v3 (herm/veridictory-state [:hermeneutic/enigma :hermeneutic/snare :hermeneutic/partial-answer])]
+      (is (= :open (:status v3)))
+      (is (= :secret (:veridictory-pole v3)))
+      (is (= 2 (:retardation-count v3)))
+      (is (== 2.0 (:retardation-ratio v3))))
+
+    ;; 5. Jamming (blocage) -> Falsity pole (~Being + ~Seeming)
+    (let [v-jammed (herm/veridictory-state [:hermeneutic/enigma :hermeneutic/jamming])]
+      (is (= :jammed (:status v-jammed)))
+      (is (= :falsity (:veridictory-pole v-jammed)))
+      (is (false? (:sanction-ready? v-jammed))))
+
+    ;; 6. Final Disclosure (devoilement) -> Truth pole (Being + Seeming)
+    (let [v-disc (herm/veridictory-state [:hermeneutic/enigma
+                                          :hermeneutic/snare
+                                          :hermeneutic/partial-answer
+                                          :hermeneutic/disclosure])]
+      (is (= :disclosed (:status v-disc)))
+      (is (= :truth (:veridictory-pole v-disc)))
+      (is (true? (:sanction-ready? v-disc))))))
+
+  (testing "Hermeneutic arc stepwise construction"
+    (let [arc (herm/hermeneutic-arc :arc/faraday-induction "Nature of induced current" [:hermeneutic/enigma])
+          arc2 (herm/step-arc arc :hermeneutic/snare)
+          arc3 (herm/step-arc arc2 :hermeneutic/disclosure)]
+      (is (= 1 (count (:arc/morphemes arc))))
+      (is (= 2 (count (:arc/morphemes arc2))))
+      (is (= 3 (count (:arc/morphemes arc3))))
+      (is (= :lie (get-in arc2 [:arc/state :veridictory-pole])))
+      (is (= :truth (get-in arc3 [:arc/state :veridictory-pole])))
+      (is (true? (get-in arc3 [:arc/state :sanction-ready?])))))
+
+  (testing "Guard sanction against premature epistemic closure"
+    (let [complete-phases {:manipulation "Royal Society inquiry"
+                           :competence   "Voltaic battery and galvanometer"
+                           :performance  "Wire moved across magnetic poles"
+                           :sanction     "Verification of electromagnetic induction"}
+          unresolved-seq [:hermeneutic/enigma :hermeneutic/snare :hermeneutic/equivocation]
+          resolved-seq   [:hermeneutic/enigma :hermeneutic/partial-answer :hermeneutic/disclosure]]
+
+      ;; Premature sanction blocked
+      (let [blocked-res (herm/guard-sanction complete-phases unresolved-seq)]
+        (is (= :blocked (:status blocked-res)))
+        (is (= :premature-sanction-attempted (:reason blocked-res)))
+        (is (not (contains? (:phase-map blocked-res) :sanction)))
+        (is (false? (get-in blocked-res [:canonical-trajectory :trajectory/complete?]))))
+
+      ;; Epistemically grounded sanction permitted
+      (let [permitted-res (herm/guard-sanction complete-phases resolved-seq)]
+        (is (= :permitted (:status permitted-res)))
+        (is (= :sanction-epistemically-grounded (:reason permitted-res)))
+        (is (contains? (:phase-map permitted-res) :sanction))
+        (is (true? (get-in permitted-res [:canonical-trajectory :trajectory/complete?]))))))
+
 (deftest generative-spec-check-test
   (testing "Generative property checks across seme primitives, vertex lattice, and derivation chains"
     (let [res (stest/check [`rheme/seme
@@ -783,7 +863,13 @@
                             `barthes/braid-codes
                             `barthes/extract-code-stream
                             `barthes/polyphonic-density
-                            `barthes/braid-summary]
+                            `barthes/braid-summary
+                            `herm/morpheme->veridictory-pole
+                            `herm/veridictory-state
+                            `herm/retardation-ratio
+                            `herm/hermeneutic-arc
+                            `herm/step-arc
+                            `herm/guard-sanction]
                            {:clojure.spec.test.check/opts {:num-tests 100}})]
       (doseq [r res]
         (let [sym (:sym r)

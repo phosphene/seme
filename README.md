@@ -47,6 +47,7 @@ The library is organized around Peirce's 1906 trichotomy and extended with predi
 | **`phosphene.seme.chain`** | **Syntagmatic Grammars** | Predicative regex grammars over token sequences | `chain-grammar`, `slot`, `alt-slot`, `nested-slot`, `grammar-commutator`, `conformed-chain-witness` |
 | **`phosphene.seme.actant`** | **Narrative Syntax** | Greimassian actants, junctions & state transformations | `actantial-model`, `find-roles-for-actor`, `narrative-state`, `narrative-program`, `execute-program`, `canonical-trajectory` |
 | **`phosphene.seme.barthes`** | **Plural Textuality** | Barthesian lexias, nuclei/catalyzers & five-code braid | `make-lexia`, `segment-lexias`, `classify-narrative-unit`, `braid-codes`, `extract-code-stream`, `braid-summary` |
+| **`phosphene.seme.hermeneutic`** | **Epistemic Retardation** | Barthesian hermeneutic morphemes & Veridictory Square state machine | `veridictory-state`, `retardation-ratio`, `hermeneutic-arc`, `step-arc`, `guard-sanction` |
 | **`phosphene.seme.complementarity`** | **Quantum Semiotics** | Bohrian non-commutative complementarity & hinge sovereignty | `complementary-dyad`, `commutator`, `assert-non-collapsible!`, `incommensurability-dossier` |
 | **`phosphene.seme.markdown`** | **AST Ingress** | Coordinate-preserving Markdown block parser | `parse-markdown-blocks`, `read-markdown-file`, `tokenize-text` |
 | **`phosphene.seme.bridge`** | **Polyglot Interop** | Python JSON manifest ingress & external verifier runners | `ingest-manifest-entries`, `validate-markdown-chain`, `run-python-verifier` |
@@ -178,6 +179,29 @@ For formal first-order logic axioms and Clojure s-expressions, inspect the [Arch
 (barthes/polyphonic-density (first braided)) ;=> 2
 (barthes/extract-code-stream braided :code/proairetic)
 ;;=> [{:lexia/id :doc-proof:p:1#L0, :values [:act/deflect], ...}]
+```
+
+### Hermeneutic Retardation on the Veridictory Square
+```clojure
+(require '[phosphene.seme.hermeneutic :as herm])
+
+;; 1. Evaluate hermeneutic delay and veridictory state
+(def v-state
+  (herm/veridictory-state
+    [:hermeneutic/enigma :hermeneutic/snare :hermeneutic/partial-answer]))
+
+(:veridictory-pole v-state) ;=> :secret
+(:retardation-ratio v-state) ;=> 2.0
+(:sanction-ready? v-state)   ;=> false
+
+;; 2. Guard against premature narrative sanction
+(def blocked
+  (herm/guard-sanction
+    {:manipulation "Contract" :competence "Apparatus" :performance "Observation" :sanction "Sanction"}
+    [:hermeneutic/enigma :hermeneutic/snare]))
+
+(:status blocked) ;=> :blocked
+(:reason blocked) ;=> :premature-sanction-attempted
 ```
 
 ---
