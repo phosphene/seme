@@ -223,11 +223,15 @@ For formal first-order logic axioms and Clojure s-expressions, inspect the [Arch
 
 ## 6. Verification & Testing
 
-Run the full unit and generative property test suites across all modules:
+Run the full unit, generative property, and cross-trifecta integration test suites across all modules:
 
 ```bash
 clojure -M:runner
 ```
+
+Cross-trifecta integration test suites in `phosphene.seme.integration-test` run end-to-end analytical pipelines across `phosphene/syntagma` (coordinate-preserving Markdown AST & textuality metrics), `phosphene/seme` (lexias, five codes, hermeneutic arcs, nomadic figures, narrative programs), and `phosphene/paradigma` (staggered Order-2 connotation squares) on empirical public-domain corpora:
+* **Michael Faraday (1832), *Experimental Researches in Electricity*:** Full epistemic trajectory from AST ingestion and inductive experimental lexias to Order-2 field ontology square projection.
+* **Honoré de Balzac (1830), *Sarrasine* (*S/Z* Corpus):** Barthes' canonical literary structuration, dilatory retardation on the Veridictory Square, and symbolic transgression detection across gender contrariety. See [Cross-Trifecta Verification (BARTHES 5)](doc/wiki/cross-trifecta-verification.md).
 
 ---
 
