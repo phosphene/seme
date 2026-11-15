@@ -15,7 +15,8 @@
             [phosphene.seme.bridge :as bridge]
             [phosphene.seme.actant :as actant]
             [phosphene.seme.barthes :as barthes]
-            [phosphene.seme.hermeneutic :as herm]))
+            [phosphene.seme.hermeneutic :as herm]
+            [phosphene.seme.figure :as figure]))
 
 ;; --- Re-exported Rheme Primitives (Firstness) ---
 
@@ -127,3 +128,11 @@
 (def hermeneutic-arc herm/hermeneutic-arc)
 (def step-arc herm/step-arc)
 (def guard-sanction herm/guard-sanction)
+
+;; --- Re-exported Figures & Symbolic Transgression (Barthes) ---
+
+(def make-figure figure/make-figure)
+(def figure? figure/figure?)
+(def accumulate-semes figure/accumulate-semes)
+(def trace-figure figure/trace-figure)
+(def detect-transgression figure/detect-transgression)

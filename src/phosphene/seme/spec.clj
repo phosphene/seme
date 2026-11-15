@@ -13,7 +13,8 @@
             [phosphene.seme.bridge :as bridge]
             [phosphene.seme.actant :as actant]
             [phosphene.seme.barthes :as barthes]
-            [phosphene.seme.hermeneutic :as herm]))
+            [phosphene.seme.hermeneutic :as herm]
+            [phosphene.seme.figure :as figure]))
 
 ;; --- Sovereign Attribute Specs & Generators ---
 
@@ -670,6 +671,68 @@
           (if-not (:sanction-ready? v-state)
             (= :blocked (:status ret))
             (= :permitted (:status ret))))))
+
+;; --- Function Specs: Nomadic Figures & Symbolic Transgression ---
+
+(s/def :fig/id keyword?)
+(s/def :fig/actor any?)
+(s/def :fig/semic-constellation (s/coll-of keyword? :kind set?))
+(s/def :fig/trajectory (s/coll-of map? :kind vector?))
+
+(s/def ::figure
+  (s/with-gen
+    (s/and map?
+           #(figure/figure? %))
+    #(gen/fmap (fn [[id act semes]]
+                 (figure/make-figure id act semes))
+               (gen/tuple (gen/elements [:fig/faraday :fig/sarrasine :fig/zambinella])
+                          (gen/elements [:actor/faraday :actor/sarrasine :actor/zambinella])
+                          (gen/elements [#{:field :current} #{:beauty :fragile} #{}])))))
+
+(s/def :fig/actor
+  (s/with-gen (s/and (complement nil?) (s/or :kw keyword? :sym symbol? :str string?))
+    #(gen/elements [:actor/faraday :actor/sarrasine :actor/zambinella :actor/bouchardon])))
+
+(s/fdef figure/make-figure
+  :args (s/or :two (s/cat :id (s/or :kw keyword? :str string?) :actor :fig/actor)
+              :three (s/cat :id (s/or :kw keyword? :str string?) :actor :fig/actor :semes (s/coll-of keyword? :kind set?))
+              :four (s/cat :id (s/or :kw keyword? :str string?) :actor :fig/actor :semes (s/coll-of keyword? :kind set?) :traj vector?)
+              :five (s/cat :id (s/or :kw keyword? :str string?) :actor :fig/actor :semes (s/coll-of keyword? :kind set?) :traj vector? :meta map?))
+  :ret ::figure
+  :fn (fn [{:keys [ret]}]
+        (figure/figure? ret)))
+
+(s/fdef figure/accumulate-semes
+  :args (s/cat :fig ::figure :new-semes any?)
+  :ret ::figure
+  :fn (fn [{:keys [args ret]}]
+        (let [{:keys [fig new-semes]} args]
+          (set/subset? (:figure/semic-constellation fig)
+                       (:figure/semic-constellation ret)))))
+
+(s/fdef figure/trace-figure
+  :args (s/or :two (s/cat :fig (s/or :record ::figure :kw keyword?) :lexias (s/coll-of ::lexia :kind vector?))
+              :three (s/cat :fig (s/or :record ::figure :kw keyword?) :lexias (s/coll-of ::lexia :kind vector?) :square any?))
+  :ret ::figure)
+
+(s/fdef figure/detect-transgression
+  :args (s/cat :square (s/with-gen any?
+                         #(gen/return {:square/id :sq/test
+                                       :square/s1 :life
+                                       :square/s2 :death
+                                       :square/non-s1 :non-life
+                                       :square/non-s2 :non-death
+                                       :square/complex :life+death
+                                       :square/neutral :non-life+non-death}))
+               :step-from (s/with-gen keyword? #(gen/elements [:life :death :non-life :non-death :complex :life+death]))
+               :step-to   (s/with-gen keyword? #(gen/elements [:life :death :non-life :non-death :complex :life+death])))
+  :ret (s/keys :req-un [:fig.trans/transgression? :fig.trans/type :fig.trans/from :fig.trans/to :fig.trans/square])
+  :fn (fn [{:keys [args ret]}]
+        (let [{:keys [step-from step-to]} args]
+          (and (boolean? (:transgression? ret))
+               (contains? #{:lawful-mediation :transgressive-collapse :direct-contrary-leap :identity :unrelated}
+                          (:type ret))))))
+
 
 
 

@@ -12,6 +12,7 @@
             [phosphene.seme.actant :as actant]
             [phosphene.seme.barthes :as barthes]
             [phosphene.seme.hermeneutic :as herm]
+            [phosphene.seme.figure :as figure]
             [phosphene.seme.spec :as seme-spec]))
 
 (deftest rheme-feature-algebra-test
@@ -819,6 +820,61 @@
         (is (contains? (:phase-map permitted-res) :sanction))
         (is (true? (get-in permitted-res [:canonical-trajectory :trajectory/complete?]))))))
 
+(deftest nomadic-figures-and-transgression-test
+  (testing "Figure construction and seme accumulation"
+    (let [fig (figure/make-figure :fig/sarrasine :actor/sarrasine #{:impulsive :artist})
+          fig2 (figure/accumulate-semes fig #{:tragic :passion})]
+      (is (true? (figure/figure? fig)))
+      (is (= #{:impulsive :artist} (:figure/semic-constellation fig)))
+      (is (= #{:impulsive :artist :tragic :passion} (:figure/semic-constellation fig2)))))
+
+  (testing "Tracing figure trajectory across lexias"
+    (let [proj-fn (fn [semes]
+                    (cond
+                      (contains? semes :art) {:projection/position :s1 :projection/term :art}
+                      (contains? semes :passion) {:projection/position :s2 :projection/term :passion}
+                      :else nil))
+          fig (figure/make-figure :fig/sarrasine :actor/sarrasine)
+          lexias [(barthes/make-lexia :l1 "doc:p:1" [:sarrasine :loved :art] "Sarrasine loved art." :function/catalyzer {:code/semic [:art]})
+                  (barthes/make-lexia :l2 "doc:p:2" [:the :stormy :night] "The stormy night." :function/catalyzer {})
+                  (barthes/make-lexia :l3 "doc:p:3" [:sarrasine :burned :with :passion] "Sarrasine burned with passion." :function/catalyzer {:code/semic [:passion]})]
+          traced (figure/trace-figure fig lexias proj-fn)]
+      (is (= 2 (count (:figure/trajectory traced))))
+      (is (contains? (:figure/semic-constellation traced) :art))
+      (is (contains? (:figure/semic-constellation traced) :passion))
+      (is (= :s1 (get-in (first (:figure/trajectory traced)) [:projection :projection/position])))
+      (is (= :s2 (get-in (second (:figure/trajectory traced)) [:projection :projection/position])))))
+
+  (testing "Symbolic transgression detection on semiotic square (Barthes S/Z §XLI, §LXXXI)"
+    (let [sq {:square/id :sq/gender
+              :square/s1 :masculine
+              :square/s2 :feminine
+              :square/non-s1 :non-masculine
+              :square/non-s2 :non-feminine
+              :square/complex :complex
+              :square/neutral :neutral}]
+      ;; 1. Identity
+      (is (= {:transgression? false :type :identity :from :masculine :to :masculine :square :sq/gender}
+             (figure/detect-transgression sq :masculine :masculine)))
+
+      ;; 2. Lawful dialectical mediation: S_1 -> ~S_1 (negation)
+      (is (= {:transgression? false :type :lawful-mediation :from :masculine :to :non-masculine :square :sq/gender}
+             (figure/detect-transgression sq :masculine :non-masculine)))
+
+      ;; 3. Lawful dialectical mediation: ~S_1 -> S_2 (assertion along deixis)
+      (is (= {:transgression? false :type :lawful-mediation :from :non-masculine :to :feminine :square :sq/gender}
+             (figure/detect-transgression sq :non-masculine :feminine)))
+
+      ;; 4. Direct contrary leap: S_1 -> S_2 without passing through negation (Transgression)
+      (let [res (figure/detect-transgression sq :masculine :feminine)]
+        (is (true? (:transgression? res)))
+        (is (= :direct-contrary-leap (:type res))))
+
+      ;; 5. Transgressive collapse: stepping directly into Complex term (S_1 + S_2) (Transgression)
+      (let [res (figure/detect-transgression sq :masculine :complex)]
+        (is (true? (:transgression? res)))
+        (is (= :transgressive-collapse (:type res)))))))
+
 (deftest generative-spec-check-test
   (testing "Generative property checks across seme primitives, vertex lattice, and derivation chains"
     (let [res (stest/check [`rheme/seme
@@ -869,7 +925,11 @@
                             `herm/retardation-ratio
                             `herm/hermeneutic-arc
                             `herm/step-arc
-                            `herm/guard-sanction]
+                            `herm/guard-sanction
+                            `figure/make-figure
+                            `figure/accumulate-semes
+                            `figure/trace-figure
+                            `figure/detect-transgression]
                            {:clojure.spec.test.check/opts {:num-tests 100}})]
       (doseq [r res]
         (let [sym (:sym r)

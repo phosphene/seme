@@ -48,6 +48,7 @@ The library is organized around Peirce's 1906 trichotomy and extended with predi
 | **`phosphene.seme.actant`** | **Narrative Syntax** | Greimassian actants, junctions & state transformations | `actantial-model`, `find-roles-for-actor`, `narrative-state`, `narrative-program`, `execute-program`, `canonical-trajectory` |
 | **`phosphene.seme.barthes`** | **Plural Textuality** | Barthesian lexias, nuclei/catalyzers & five-code braid | `make-lexia`, `segment-lexias`, `classify-narrative-unit`, `braid-codes`, `extract-code-stream`, `braid-summary` |
 | **`phosphene.seme.hermeneutic`** | **Epistemic Retardation** | Barthesian hermeneutic morphemes & Veridictory Square state machine | `veridictory-state`, `retardation-ratio`, `hermeneutic-arc`, `step-arc`, `guard-sanction` |
+| **`phosphene.seme.figure`** | **Nomadic Semic Figures** | Barthesian figures, semic constellations & symbolic transgression | `make-figure`, `accumulate-semes`, `trace-figure`, `detect-transgression` |
 | **`phosphene.seme.complementarity`** | **Quantum Semiotics** | Bohrian non-commutative complementarity & hinge sovereignty | `complementary-dyad`, `commutator`, `assert-non-collapsible!`, `incommensurability-dossier` |
 | **`phosphene.seme.markdown`** | **AST Ingress** | Coordinate-preserving Markdown block parser | `parse-markdown-blocks`, `read-markdown-file`, `tokenize-text` |
 | **`phosphene.seme.bridge`** | **Polyglot Interop** | Python JSON manifest ingress & external verifier runners | `ingest-manifest-entries`, `validate-markdown-chain`, `run-python-verifier` |
@@ -202,6 +203,20 @@ For formal first-order logic axioms and Clojure s-expressions, inspect the [Arch
 
 (:status blocked) ;=> :blocked
 (:reason blocked) ;=> :premature-sanction-attempted
+```
+
+### Nomadic Figures & Symbolic Transgression Detection
+```clojure
+(require '[phosphene.seme.figure :as fig])
+
+;; 1. Trace semic trajectory of an entity over lexias
+(def f (fig/make-figure :fig/sarrasine :actor/sarrasine #{:artist}))
+(def f-accum (fig/accumulate-semes f #{:tragic :passion}))
+
+;; 2. Detect symbolic transgression across semiotic square contrariety
+;; Direct contrary leap or collapse into Complex synthesis triggers transgression
+(fig/detect-transgression sq :masculine :feminine)
+;;=> {:transgression? true, :type :direct-contrary-leap, ...}
 ```
 
 ---
